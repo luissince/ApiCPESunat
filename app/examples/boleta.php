@@ -31,13 +31,13 @@ if (!is_array($resultVenta)) {
     $cabecera = $resultVenta[1];
     $detalle = $resultVenta[2];
 
-    $opegravada = $resultVenta[3]["opegravada"];
-    $opeexogenada = $resultVenta[3]["opeexonerada"];
+    $opegravada = $resultVenta[4]["opegravada"];
+    $opeexogenada = $resultVenta[4]["opeexonerada"];
 
-    $totalsinimp = $resultVenta[3]["totalsinimpuesto"];
-    $totalconimp = $resultVenta[3]["totalconimpuesto"];
+    $sumasinimp = $resultVenta[4]["totalsinimpuesto"];
+    $sumaconimp = $resultVenta[4]["totalconimpuesto"];
 
-    $totalimporte = $resultVenta[3]["totalimporte"];
+    $totalimporte = $resultVenta[4]["totalimporte"];
 
     $xml = new DomDocument('1.0', 'utf-8');
     // $xml->standalone         = true;
@@ -208,17 +208,17 @@ if (!is_array($resultVenta)) {
     // TOTALES 
     $cac_TaxTotal = $xml->createElement('cac:TaxTotal');
     $cac_TaxTotal = $Invoice->appendChild($cac_TaxTotal);
-    $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($totalconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+    $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($sumaconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
     $cbc->setAttribute('currencyID', $cabecera->codiso);
     $cbc = $cac_TaxTotal->appendChild($cbc);
 
-    if ($totalconimp > 0) {
+    if ($sumaconimp > 0) {
         $cac_TaxSubtotal = $xml->createElement('cac:TaxSubtotal');
         $cac_TaxSubtotal = $cac_TaxTotal->appendChild($cac_TaxSubtotal);
         $cbc = $xml->createElement('cbc:TaxableAmount', number_format(round($opegravada, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac_TaxSubtotal->appendChild($cbc);
         $cbc->setAttribute('currencyID', $cabecera->codiso);
-        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($totalconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($sumaconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac_TaxSubtotal->appendChild($cbc);
         $cbc->setAttribute('currencyID', $cabecera->codiso);
         $cac_TaxCategory = $xml->createElement('cac:TaxCategory');
@@ -237,7 +237,7 @@ if (!is_array($resultVenta)) {
         $cbc = $xml->createElement('cbc:TaxableAmount', number_format(round($opeexogenada, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac_TaxSubtotal->appendChild($cbc);
         $cbc->setAttribute('currencyID', $cabecera->codiso);
-        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($totalconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($sumaconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac_TaxSubtotal->appendChild($cbc);
         $cbc->setAttribute('currencyID', $cabecera->codiso);
         $cac_TaxCategory = $xml->createElement('cac:TaxCategory');
@@ -255,7 +255,7 @@ if (!is_array($resultVenta)) {
     // LEGAL MONETARY TOTAL  
     $cac_LegalMonetaryTotal = $xml->createElement('cac:LegalMonetaryTotal');
     $cac_LegalMonetaryTotal = $Invoice->appendChild($cac_LegalMonetaryTotal);
-    $cbc = $xml->createElement('cbc:LineExtensionAmount', number_format(round($totalsinimp, 2, PHP_ROUND_HALF_UP), 2, '.', '')); //
+    $cbc = $xml->createElement('cbc:LineExtensionAmount', number_format(round($sumasinimp, 2, PHP_ROUND_HALF_UP), 2, '.', '')); //
     $cbc = $cac_LegalMonetaryTotal->appendChild($cbc);
     $cbc->setAttribute('currencyID',  $cabecera->codiso);
     $cbc = $xml->createElement('cbc:TaxInclusiveAmount', number_format(round($totalimporte, 2, PHP_ROUND_HALF_UP), 2, '.', ''));

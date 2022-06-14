@@ -15,23 +15,29 @@ use SysSoftIntegra\Model\VentasADO;
 require __DIR__ . './../src/autoload.php';
 
 $idventa = $_GET['idventa'];
-$detalleventa = VentasADO::ListarDetalleVentPorId($idventa);
+$resultVenta = VentasADO::DetalleVentaSunat($idventa);
 
-if (!is_array($detalleventa)) {
+if (!is_array($resultVenta)) {
     echo json_encode(array(
         "state" => false,
         "code" => "-1",
-        "description" => $detalleventa
+        "description" => $resultVenta
     ));
 } else {
 
-    $detalle = $detalleventa[0]['detalle'];
-    $empresa = $detalleventa[1];
-    $cliente = $detalleventa[2];
-    $venta = $detalleventa[3];
-    $correlativoActual = $detalleventa[4];
-    $correlativo = ($correlativoActual === 0) ? (intval($venta->Correlativo) + 1) : ($correlativoActual + 1);
+    $empresa = $resultVenta[0];
+    $cabecera = $resultVenta[1];
+    $detalle = $resultVenta[2];
 
+    $opegravada = $resultVenta[4]["opegravada"];
+    $opeexogenada = $resultVenta[4]["opeexonerada"];
+
+    $sumasinimp = $resultVenta[4]["totalsinimpuesto"];
+    $sumaconimp = $resultVenta[4]["totalconimpuesto"];
+
+    $totalimporte = $resultVenta[4]["totalimporte"];
+    $correlativoActual = $resultVenta[3];
+    $correlativo = ($correlativoActual === 0) ? (intval($cabecera->correlativo) + 1) : ($correlativoActual + 1);
     date_default_timezone_set('America/Lima');
     $currentDate = new DateTime('now');
 
@@ -60,14 +66,14 @@ if (!is_array($detalleventa)) {
     $contents = $xml->createElement('ext:ExtensionContent', ' ');
     $contents = $ext->appendChild($contents);
 
-    $date = new DateTime($venta->FechaVenta . "T" . $venta->HoraVenta);
+    $date = new DateTime($cabecera->fecha . "T" . $cabecera->hora);
 
     //Version de UBL 2.0
     $cbc = $xml->createElement('cbc:UBLVersionID', '2.0');
     $cbc = $Invoice->appendChild($cbc);
     $cbc = $xml->createElement('cbc:CustomizationID', '1.0');
     $cbc = $Invoice->appendChild($cbc);
-    $cbc = $xml->createElement('cbc:ID', 'RA-' . $currentDate->format('Ymd') . '-' . $correlativo);
+    $cbc = $xml->createElement('cbc:ID', 'RA-' .  $currentDate->format('Ymd') . '-' . $correlativo);
     $cbc = $Invoice->appendChild($cbc);
     $cbc = $xml->createElement('cbc:ReferenceDate', $date->format('Y-m-d'));
     $cbc = $Invoice->appendChild($cbc);
@@ -77,18 +83,18 @@ if (!is_array($detalleventa)) {
     // DATOS DE FIRMA
     $cac_signature = $xml->createElement('cac:Signature');
     $cac_signature = $Invoice->appendChild($cac_signature);
-    $cbc = $xml->createElement('cbc:ID',  $empresa->NumeroDocumento);
+    $cbc = $xml->createElement('cbc:ID',  $empresa->ruc);
     $cbc = $cac_signature->appendChild($cbc);
     $cac_signatory = $xml->createElement('cac:SignatoryParty');
     $cac_signatory = $cac_signature->appendChild($cac_signatory);
     $cac = $xml->createElement('cac:PartyIdentification');
     $cac = $cac_signatory->appendChild($cac);
-    $cbc = $xml->createElement('cbc:ID',  $empresa->NumeroDocumento);
+    $cbc = $xml->createElement('cbc:ID', $empresa->ruc);
     $cbc = $cac->appendChild($cbc);
     $cac = $xml->createElement('cac:PartyName');
     $cac = $cac_signatory->appendChild($cac);
     $cbc = $xml->createElement('cbc:Name');
-    $cbc->appendChild($xml->createCDATASection($empresa->RazonSocial));
+    $cbc->appendChild($xml->createCDATASection($empresa->razonSocial));
     $cbc = $cac->appendChild($cbc);
     $cac = $xml->createElement('cac:ExternalReference');
     $cac_digital = $xml->createElement('cac:DigitalSignatureAttachment');
@@ -100,16 +106,16 @@ if (!is_array($detalleventa)) {
     // DATOS EMISOR
     $cac_SupplierParty = $xml->createElement('cac:AccountingSupplierParty');
     $cac_SupplierParty = $Invoice->appendChild($cac_SupplierParty);
-    $CustomerAssignedAccountID = $xml->createElement('cbc:CustomerAssignedAccountID', $empresa->NumeroDocumento);
+    $CustomerAssignedAccountID = $xml->createElement('cbc:CustomerAssignedAccountID', $empresa->ruc);
     $CustomerAssignedAccountID = $cac_SupplierParty->appendChild($CustomerAssignedAccountID);
-    $AdditionalAccountID = $xml->createElement('cbc:AdditionalAccountID', '6');
+    $AdditionalAccountID = $xml->createElement('cbc:AdditionalAccountID',  $empresa->coddocumento);
     $AdditionalAccountID = $cac_SupplierParty->appendChild($AdditionalAccountID);
     $cac_party = $xml->createElement('cac:Party');
     $cac_party = $cac_SupplierParty->appendChild($cac_party);
     $PartyLegalEntity = $xml->createElement('cac:PartyLegalEntity');
     $PartyLegalEntity = $cac_party->appendChild($PartyLegalEntity);
     $cbc = $xml->createElement('cbc:RegistrationName');
-    $cbc->appendChild($xml->createCDATASection($empresa->RazonSocial));
+    $cbc->appendChild($xml->createCDATASection($empresa->nombreEmpresa));
     $cbc = $PartyLegalEntity->appendChild($cbc);
 
 
@@ -118,11 +124,11 @@ if (!is_array($detalleventa)) {
     $VoidedDocumentsLine = $Invoice->appendChild($VoidedDocumentsLine);
     $LineID = $xml->createElement('cbc:LineID', '1');
     $LineID = $VoidedDocumentsLine->appendChild($LineID);
-    $DocumentTypeCode = $xml->createElement('cbc:DocumentTypeCode', $venta->TipoComprobante);
+    $DocumentTypeCode = $xml->createElement('cbc:DocumentTypeCode', $cabecera->codcomprobante);
     $DocumentTypeCode = $VoidedDocumentsLine->appendChild($DocumentTypeCode);
-    $DocumentSerialID = $xml->createElement('sac:DocumentSerialID', $venta->Serie);
+    $DocumentSerialID = $xml->createElement('sac:DocumentSerialID', $cabecera->serie );
     $DocumentSerialID = $VoidedDocumentsLine->appendChild($DocumentSerialID);
-    $DocumentNumberID = $xml->createElement('sac:DocumentNumberID', $venta->Numeracion);
+    $DocumentNumberID = $xml->createElement('sac:DocumentNumberID', $cabecera->numeracion);
     $DocumentNumberID = $VoidedDocumentsLine->appendChild($DocumentNumberID);
     $VoidReasonDescription = $xml->createElement('sac:VoidReasonDescription');
     $VoidReasonDescription->appendChild($xml->createCDATASection("ERROR EN EL SISTEMA"));
@@ -139,58 +145,60 @@ if (!is_array($detalleventa)) {
     }
 
 
-    $filename = $empresa->NumeroDocumento . '-RA-' . $currentDate->format('Ymd') . '-' . $correlativo;
+    $filename = $empresa->ruc . '-RA-' . $currentDate->format('Ymd') . '-' . $correlativo;
     $xml->save('../files/' . $filename . '.xml');
     chmod('../files/' . $filename . '.xml', 0777);
 
-    Sunat::signDocument($filename);
+    echo json_encode($resultVenta);
 
-    Sunat::createZip("../files/" . $filename . ".zip", "../files/" . $filename . ".xml", "" . $filename . ".xml");
+    // Sunat::signDocument($filename);
 
-    $soapResult = new SoapResult('../resources/wsdl/billService.wsdl', $filename);
-    $soapResult->sendSumary(Sunat::xmlSendSummary($empresa->NumeroDocumento, $empresa->UsuarioSol, $empresa->ClaveSol, $filename . '.zip', base64_encode(file_get_contents('../files/' . $filename . '.zip'))));
-    if ($soapResult->isSuccess()) {
-        $soapResult->sendGetStatus(Sunat::xmlGetStatus($empresa->NumeroDocumento, $empresa->UsuarioSol, $empresa->ClaveSol, $soapResult->getTicket()));
-        if ($soapResult->isSuccess()) {
-            if ($soapResult->isAccepted()) {
-                VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
-                $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-                header($protocol . ' ' . 200 . ' ' . "OK");
+    // Sunat::createZip("../files/" . $filename . ".zip", "../files/" . $filename . ".xml", "" . $filename . ".xml");
 
-                echo json_encode(array(
-                    "state" => $soapResult->isSuccess(),
-                    "accept" => $soapResult->isAccepted(),
-                    "code" => $soapResult->getCode(),
-                    "description" => $soapResult->getDescription()
-                ));
-            } else {
-                VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
-                $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-                header($protocol . ' ' . 200 . ' ' . "OK");
+    // $soapResult = new SoapResult('../resources/wsdl/billService.wsdl', $filename);
+    // $soapResult->sendSumary(Sunat::xmlSendSummary($empresa->NumeroDocumento, $empresa->UsuarioSol, $empresa->ClaveSol, $filename . '.zip', base64_encode(file_get_contents('../files/' . $filename . '.zip'))));
+    // if ($soapResult->isSuccess()) {
+    //     $soapResult->sendGetStatus(Sunat::xmlGetStatus($empresa->NumeroDocumento, $empresa->UsuarioSol, $empresa->ClaveSol, $soapResult->getTicket()));
+    //     if ($soapResult->isSuccess()) {
+    //         if ($soapResult->isAccepted()) {
+    //             VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+    //             $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
+    //             header($protocol . ' ' . 200 . ' ' . "OK");
 
-                echo json_encode(array(
-                    "state" => $soapResult->isSuccess(),
-                    "accept" => $soapResult->isAccepted(),
-                    "code" => $soapResult->getCode(),
-                    "description" => $soapResult->getDescription()
-                ));
-            }
-        } else {
-            VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
-            $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-            header($protocol . ' ' . 200 . ' ' . "OK");
+    //             echo json_encode(array(
+    //                 "state" => $soapResult->isSuccess(),
+    //                 "accept" => $soapResult->isAccepted(),
+    //                 "code" => $soapResult->getCode(),
+    //                 "description" => $soapResult->getDescription()
+    //             ));
+    //         } else {
+    //             VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+    //             $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
+    //             header($protocol . ' ' . 200 . ' ' . "OK");
 
-            echo json_encode(array(
-                "state" => false,
-                "code" => $soapResult->getCode(),
-                "description" => $soapResult->getDescription()
-            ));
-        }
-    } else {
-        VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
-        $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-        header($protocol . ' ' . 500 . ' ' . "Internal Server Error");
+    //             echo json_encode(array(
+    //                 "state" => $soapResult->isSuccess(),
+    //                 "accept" => $soapResult->isAccepted(),
+    //                 "code" => $soapResult->getCode(),
+    //                 "description" => $soapResult->getDescription()
+    //             ));
+    //         }
+    //     } else {
+    //         VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+    //         $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
+    //         header($protocol . ' ' . 200 . ' ' . "OK");
 
-        echo json_encode($soapResult->getDescription());
-    }
+    //         echo json_encode(array(
+    //             "state" => false,
+    //             "code" => $soapResult->getCode(),
+    //             "description" => $soapResult->getDescription()
+    //         ));
+    //     }
+    // } else {
+    //     VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+    //     $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
+    //     header($protocol . ' ' . 500 . ' ' . "Internal Server Error");
+
+    //     echo json_encode($soapResult->getDescription());
+    // }
 }

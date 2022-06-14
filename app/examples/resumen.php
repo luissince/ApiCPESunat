@@ -15,22 +15,29 @@ use SysSoftIntegra\Model\VentasADO;
 require __DIR__ . './../src/autoload.php';
 
 $idventa = $_GET['idventa'];
-$detalleventa = VentasADO::ListarDetalleVentPorId($idventa);
+$resultVenta = VentasADO::DetalleVentaSunat($idventa);
 
-if (!is_array($detalleventa)) {
+if (!is_array($resultVenta)) {
     echo json_encode(array(
         "state" => false,
         "code" => "-1",
-        "description" => $detalleventa
+        "description" => $resultVenta
     ));
 } else {
 
-    $detalle = $detalleventa[0]['detalle'];
-    $empresa = $detalleventa[1];
-    $cliente = $detalleventa[2];
-    $venta = $detalleventa[3];
-    $correlativoActual = $detalleventa[4];
-    $correlativo = ($correlativoActual === 0) ? (intval($venta->Correlativo) + 1) : ($correlativoActual + 1);
+    $empresa = $resultVenta[0];
+    $cabecera = $resultVenta[1];
+    $detalle = $resultVenta[2];
+
+    $opegravada = $resultVenta[4]["opegravada"];
+    $opeexogenada = $resultVenta[4]["opeexonerada"];
+
+    $sumasinimp = $resultVenta[4]["totalsinimpuesto"];
+    $sumaconimp = $resultVenta[4]["totalconimpuesto"];
+
+    $totalimporte = $resultVenta[4]["totalimporte"];
+    $correlativoActual = $resultVenta[3];
+    $correlativo = ($correlativoActual === 0) ? (intval($cabecera->correlativo) + 1) : ($correlativoActual + 1);
     date_default_timezone_set('America/Lima');
     $currentDate = new DateTime('now');
 
@@ -48,8 +55,6 @@ if (!is_array($detalleventa)) {
     $Invoice->setAttribute('xmlns:cbc', 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2');
     $Invoice->setAttribute('xmlns:cac', 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2');
 
-
-
     $UBLExtension = $xml->createElement('ext:UBLExtensions');
     $UBLExtension = $Invoice->appendChild($UBLExtension);
 
@@ -58,7 +63,7 @@ if (!is_array($detalleventa)) {
     $contents = $xml->createElement('ext:ExtensionContent', ' ');
     $contents = $ext->appendChild($contents);
 
-    $date = new DateTime($venta->FechaVenta . "T" . $venta->HoraVenta);
+    $date = new DateTime($cabecera->fecha . "T" . $cabecera->hora);
 
     //Version de UBL 2.0
     $cbc = $xml->createElement('cbc:UBLVersionID', '2.0');
@@ -72,21 +77,21 @@ if (!is_array($detalleventa)) {
     $cbc = $xml->createElement('cbc:IssueDate', $currentDate->format('Y-m-d'));
     $cbc = $Invoice->appendChild($cbc);
 
-    // DATOS DE FIRMA
+    // // DATOS DE FIRMA
     $cac_signature = $xml->createElement('cac:Signature');
     $cac_signature = $Invoice->appendChild($cac_signature);
-    $cbc = $xml->createElement('cbc:ID',  $empresa->NumeroDocumento);
+    $cbc = $xml->createElement('cbc:ID',  $empresa->ruc);
     $cbc = $cac_signature->appendChild($cbc);
     $cac_signatory = $xml->createElement('cac:SignatoryParty');
     $cac_signatory = $cac_signature->appendChild($cac_signatory);
     $cac = $xml->createElement('cac:PartyIdentification');
     $cac = $cac_signatory->appendChild($cac);
-    $cbc = $xml->createElement('cbc:ID',  $empresa->NumeroDocumento);
+    $cbc = $xml->createElement('cbc:ID', $empresa->ruc);
     $cbc = $cac->appendChild($cbc);
     $cac = $xml->createElement('cac:PartyName');
     $cac = $cac_signatory->appendChild($cac);
     $cbc = $xml->createElement('cbc:Name');
-    $cbc->appendChild($xml->createCDATASection($empresa->RazonSocial));
+    $cbc->appendChild($xml->createCDATASection($empresa->razonSocial));
     $cbc = $cac->appendChild($cbc);
     $cac = $xml->createElement('cac:ExternalReference');
     $cac_digital = $xml->createElement('cac:DigitalSignatureAttachment');
@@ -96,36 +101,36 @@ if (!is_array($detalleventa)) {
     $cbc = $cac->appendChild($cbc);
 
 
-    // DATOS EMISOR
+    // // DATOS EMISOR
     $cac_SupplierParty = $xml->createElement('cac:AccountingSupplierParty');
     $cac_SupplierParty = $Invoice->appendChild($cac_SupplierParty);
-    $CustomerAssignedAccountID = $xml->createElement('cbc:CustomerAssignedAccountID', $empresa->NumeroDocumento);
+    $CustomerAssignedAccountID = $xml->createElement('cbc:CustomerAssignedAccountID', $empresa->ruc);
     $CustomerAssignedAccountID = $cac_SupplierParty->appendChild($CustomerAssignedAccountID);
-    $AdditionalAccountID = $xml->createElement('cbc:AdditionalAccountID', '6');
+    $AdditionalAccountID = $xml->createElement('cbc:AdditionalAccountID', $empresa->coddocumento);
     $AdditionalAccountID = $cac_SupplierParty->appendChild($AdditionalAccountID);
     $cac_party = $xml->createElement('cac:Party');
     $cac_party = $cac_SupplierParty->appendChild($cac_party);
     $PartyLegalEntity = $xml->createElement('cac:PartyLegalEntity');
     $PartyLegalEntity = $cac_party->appendChild($PartyLegalEntity);
     $cbc = $xml->createElement('cbc:RegistrationName');
-    $cbc->appendChild($xml->createCDATASection($empresa->RazonSocial));
+    $cbc->appendChild($xml->createCDATASection($empresa->nombreEmpresa));
     $cbc = $PartyLegalEntity->appendChild($cbc);
 
-    // DOCUMENTO ASOCIADO
+    // DOCUMENTO ASOCIADO}
     $SummaryDocumentsLine = $xml->createElement('sac:SummaryDocumentsLine');
     $SummaryDocumentsLine = $Invoice->appendChild($SummaryDocumentsLine);
     $LineID = $xml->createElement('cbc:LineID', '1');
     $LineID = $SummaryDocumentsLine->appendChild($LineID);
-    $DocumentTypeCode = $xml->createElement('cbc:DocumentTypeCode', $venta->TipoComprobante);
+    $DocumentTypeCode = $xml->createElement('cbc:DocumentTypeCode', $cabecera->codcomprobante);
     $DocumentTypeCode = $SummaryDocumentsLine->appendChild($DocumentTypeCode);
-    $ID = $xml->createElement('cbc:ID', $venta->Serie . '-' . $venta->Numeracion);
+    $ID = $xml->createElement('cbc:ID', $cabecera->serie . '-' . $cabecera->numeracion);
     $ID = $SummaryDocumentsLine->appendChild($ID);
 
     $AccountingCustomerParty = $xml->createElement('cac:AccountingCustomerParty');
     $AccountingCustomerParty = $SummaryDocumentsLine->appendChild($AccountingCustomerParty);
-    $CustomerAssignedAccountID = $xml->createElement('cbc:CustomerAssignedAccountID', $cliente->NumeroDocumento);
+    $CustomerAssignedAccountID = $xml->createElement('cbc:CustomerAssignedAccountID', $cabecera->documento);
     $CustomerAssignedAccountID = $AccountingCustomerParty->appendChild($CustomerAssignedAccountID);
-    $AdditionalAccountID = $xml->createElement('cbc:AdditionalAccountID', $cliente->IdAuxiliar);
+    $AdditionalAccountID = $xml->createElement('cbc:AdditionalAccountID', $cabecera->coddocumento);
     $AdditionalAccountID = $AccountingCustomerParty->appendChild($AdditionalAccountID);
 
     $Status = $xml->createElement('cac:Status');
@@ -133,25 +138,34 @@ if (!is_array($detalleventa)) {
     $ConditionCode = $xml->createElement('cbc:ConditionCode', '3');
     $ConditionCode = $Status->appendChild($ConditionCode);
 
-    $TotalAmount = $xml->createElement('sac:TotalAmount', number_format(round($detalleventa[0]['totalconimpuesto'], 2, PHP_ROUND_HALF_UP), 2, '.', '')); //
-    $TotalAmount = $SummaryDocumentsLine->appendChild($TotalAmount);
-    $TotalAmount->setAttribute('currencyID',  $venta->TipoMoneda);
+    if ($sumaconimp > 0) {
+        $TotalAmount = $xml->createElement('sac:TotalAmount', number_format(round($totalimporte, 2, PHP_ROUND_HALF_UP), 2, '.', '')); //
+        $TotalAmount = $SummaryDocumentsLine->appendChild($TotalAmount);
+        $TotalAmount->setAttribute('currencyID',  $cabecera->codiso);
 
-    $cac_TaxTotal = $xml->createElement('cac:TaxTotal');
-    $cac_TaxTotal = $SummaryDocumentsLine->appendChild($cac_TaxTotal);
-    $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($detalleventa[0]['totalimpuesto'], 2, PHP_ROUND_HALF_UP), 2, '.', ''));
-    $cbc->setAttribute('currencyID', $venta->TipoMoneda);
-    $cbc = $cac_TaxTotal->appendChild($cbc);
+        $BillingPayment = $xml->createElement('sac:BillingPayment');
+        $BillingPayment = $SummaryDocumentsLine->appendChild($BillingPayment);
+        $PaidAmount = $xml->createElement('cbc:PaidAmount', number_format(round($opegravada, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $BillingPayment->appendChild($PaidAmount);
+        $PaidAmount->setAttribute('currencyID', $cabecera->codiso);
+        $InstructionID = $xml->createElement('cbc:InstructionID', "01");
+        $BillingPayment->appendChild($InstructionID);
+    
+        $cac_TaxTotal = $xml->createElement('cac:TaxTotal');
+        $cac_TaxTotal = $SummaryDocumentsLine->appendChild($cac_TaxTotal);
+        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($sumaconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
+        $cbc = $cac_TaxTotal->appendChild($cbc);
 
-    if ($detalleventa[0]['totalimpuesto'] > 0) {
         $cac_TaxSubtotal = $xml->createElement('cac:TaxSubtotal');
         $cac_TaxSubtotal = $cac_TaxTotal->appendChild($cac_TaxSubtotal);
-        $cbc = $xml->createElement('cbc:TaxableAmount', number_format(round($detalleventa[0]['opgravada'], 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        // $cbc = $xml->createElement('cbc:TaxableAmount', number_format(round($opegravada, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        // $cbc = $cac_TaxSubtotal->appendChild($cbc);
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
+
+        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($sumaconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac_TaxSubtotal->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $venta->TipoMoneda);
-        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($detalleventa[0]['totalimpuesto'], 2, PHP_ROUND_HALF_UP), 2, '.', ''));
-        $cbc = $cac_TaxSubtotal->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $venta->TipoMoneda);
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
         $cac_TaxCategory = $xml->createElement('cac:TaxCategory');
         $cac_TaxCategory = $cac_TaxSubtotal->appendChild($cac_TaxCategory);
         $cac_TaxScheme = $xml->createElement('cac:TaxScheme');
@@ -163,21 +177,39 @@ if (!is_array($detalleventa)) {
         $cbc = $xml->createElement('cbc:TaxTypeCode', 'VAT');
         $cbc = $cac_TaxScheme->appendChild($cbc);
     } else {
+        $TotalAmount = $xml->createElement('sac:TotalAmount', number_format(round($totalimporte, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $TotalAmount = $SummaryDocumentsLine->appendChild($TotalAmount);
+        $TotalAmount->setAttribute('currencyID',  $cabecera->codiso);
+
+        $BillingPayment = $xml->createElement('sac:BillingPayment');
+        $BillingPayment = $SummaryDocumentsLine->appendChild($BillingPayment);
+        $PaidAmount = $xml->createElement('cbc:PaidAmount', number_format(round($opeexogenada, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $BillingPayment->appendChild($PaidAmount);
+        $PaidAmount->setAttribute('currencyID', $cabecera->codiso);
+        $InstructionID = $xml->createElement('cbc:InstructionID', "02");
+        $BillingPayment->appendChild($InstructionID);
+
+        $cac_TaxTotal = $xml->createElement('cac:TaxTotal');
+        $cac_TaxTotal = $SummaryDocumentsLine->appendChild($cac_TaxTotal);
+        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($sumaconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
+        $cbc = $cac_TaxTotal->appendChild($cbc);
+
         $cac_TaxSubtotal = $xml->createElement('cac:TaxSubtotal');
         $cac_TaxSubtotal = $cac_TaxTotal->appendChild($cac_TaxSubtotal);
-        $cbc = $xml->createElement('cbc:TaxableAmount', number_format(round($detalleventa[0]['opexonerada'], 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $cbc = $xml->createElement('cbc:TaxableAmount', number_format(round($opeexogenada, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac_TaxSubtotal->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $venta->TipoMoneda);
-        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($detalleventa[0]['totalimpuesto'], 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
+        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($sumaconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac_TaxSubtotal->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $venta->TipoMoneda);
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
         $cac_TaxCategory = $xml->createElement('cac:TaxCategory');
         $cac_TaxCategory = $cac_TaxSubtotal->appendChild($cac_TaxCategory);
         $cac_TaxScheme = $xml->createElement('cac:TaxScheme');
         $cac_TaxScheme = $cac_TaxCategory->appendChild($cac_TaxScheme);
-        $cbc = $xml->createElement('cbc:ID', '9997');
+        $cbc = $xml->createElement('cbc:ID', '1000');
         $cbc = $cac_TaxScheme->appendChild($cbc);
-        $cbc = $xml->createElement('cbc:Name', 'EXO');
+        $cbc = $xml->createElement('cbc:Name', 'IGV');
         $cbc = $cac_TaxScheme->appendChild($cbc);
         $cbc = $xml->createElement('cbc:TaxTypeCode', 'VAT');
         $cbc = $cac_TaxScheme->appendChild($cbc);
@@ -193,7 +225,7 @@ if (!is_array($detalleventa)) {
         mkdir($fileDir, 0777, true);
     }
 
-    $filename = $empresa->NumeroDocumento . '-RC-' . $currentDate->format('Ymd') . '-' . $correlativo;
+    $filename = $empresa->ruc . '-RC-' . $currentDate->format('Ymd') . '-' . $correlativo;
     $xml->save('../files/' . $filename . '.xml');
     chmod('../files/' . $filename . '.xml', 0777);
 
@@ -202,13 +234,13 @@ if (!is_array($detalleventa)) {
     Sunat::createZip("../files/" . $filename . ".zip", "../files/" . $filename . ".xml", "" . $filename . ".xml");
 
     $soapResult = new SoapResult('../resources/wsdl/billService.wsdl', $filename);
-    $soapResult->sendSumary(Sunat::xmlSendSummary($empresa->NumeroDocumento, $empresa->UsuarioSol, $empresa->ClaveSol, $filename . '.zip', base64_encode(file_get_contents('../files/' . $filename . '.zip'))));
+    $soapResult->sendSumary(Sunat::xmlSendSummary($empresa->ruc,  $empresa->useSol, $empresa->claveSol, $filename . '.zip', base64_encode(file_get_contents('../files/' . $filename . '.zip'))));
 
     if ($soapResult->isSuccess()) {
-        $soapResult->sendGetStatus(Sunat::xmlGetStatus($empresa->NumeroDocumento, $empresa->UsuarioSol, $empresa->ClaveSol, $soapResult->getTicket()));
+        $soapResult->sendGetStatus(Sunat::xmlGetStatus($empresa->ruc,  $empresa->useSol, $empresa->claveSol, $soapResult->getTicket()));
         if ($soapResult->isSuccess()) {
             if ($soapResult->isAccepted()) {
-                VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+                // VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
                 $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
                 header($protocol . ' ' . 200 . ' ' . "OK");
 
@@ -219,7 +251,7 @@ if (!is_array($detalleventa)) {
                     "description" => $soapResult->getDescription()
                 ));
             } else {
-                VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+                // VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
                 $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
                 header($protocol . ' ' . 200 . ' ' . "OK");
 
@@ -231,7 +263,7 @@ if (!is_array($detalleventa)) {
                 ));
             }
         } else {
-            VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+            // VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
             $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
             header($protocol . ' ' . 200 . ' ' . "OK");
 
@@ -242,7 +274,7 @@ if (!is_array($detalleventa)) {
             ));
         }
     } else {
-        VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+        // VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
         $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
         header($protocol . ' ' . 500 . ' ' . "Internal Server Error");
 

@@ -787,6 +787,12 @@ class VentasADO
             $cmdCabecera->bindParam(1, $idVenta, PDO::PARAM_STR);
             $cmdCabecera->execute();
 
+            $cmdCorrelativo = Database::getInstance()->getDb()->prepare("SELECT 
+            MAX(IFNULL(correlativo,0)) AS correlativo 
+            FROM venta 
+            WHERE fechaCorrelativo = CURRENT_DATE()");
+            $cmdCorrelativo->execute();
+
             $cmdSede = Database::getInstance()->getDb()->prepare("SELECT
             tp.codigo AS coddocumento,
             s.ruc,
@@ -849,6 +855,7 @@ class VentasADO
                 $cmdSede->fetchObject(),
                 $cmdCabecera->fetchObject(),
                 $detalle,
+                $cmdCorrelativo->fetchColumn(),
                 array(
                     "opegravada" => $opegravada,
                     "opeexonerada" => $opeexogenada,
