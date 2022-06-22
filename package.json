@@ -1,0 +1,22 @@
+{
+  "name": "apicpesunat",
+  "version": "1.0.0",
+  "description": "api sunat",
+  "main": "index.js",
+  "scripts": {
+    "start": "php -S localhost:8090",
+    "save": "git add . && git commit -m 'act'",
+    "push": "git push origin master",
+    "pull": "git pull origin master"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luismy10/ApiCPESunat.git"
+  },
+  "author": "luis alexander lara",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/luismy10/ApiCPESunat/issues"
+  },
+  "homepage": "https://github.com/luismy10/ApiCPESunat#readme"
+}
