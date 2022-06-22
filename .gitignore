@@ -1,2 +1,4 @@
 /app/resource/*.p12
 /app/resource/*.pem
+
+/app/files
