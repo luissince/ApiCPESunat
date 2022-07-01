@@ -2,3 +2,5 @@
 /app/resource/*.pem
 
 /app/files
+
+/app/database/config.json

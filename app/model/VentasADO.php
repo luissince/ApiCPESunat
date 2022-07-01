@@ -793,23 +793,28 @@ class VentasADO
             WHERE fechaCorrelativo = CURRENT_DATE()");
             $cmdCorrelativo->execute();
 
-            $cmdSede = Database::getInstance()->getDb()->prepare("SELECT
+            $cmdEmpresa = Database::getInstance()->getDb()->prepare("SELECT
             tp.codigo AS coddocumento,
-            s.ruc,
-            s.razonSocial,
-            s.nombreEmpresa,
-            s.direccion,
+            e.documento AS ruc,
+            e.razonSocial,
+            e.nombreEmpresa,
+            e.direccion,
+            e.useSol, 
+            e.claveSol
+            FROM empresa AS e  
+            INNER JOIN tipoDocumento AS tp ON tp.idTipoDocumento = e.idTipoDocumento 
+            LIMIT 1");
+            $cmdEmpresa->execute();
+
+            $cmdSede = Database::getInstance()->getDb()->prepare("SELECT
             ub.ubigeo,
             ub.departamento,
             ub.provincia,
             ub.distrito,
             s.telefono,
-            s.email,
-            s.useSol,
-            s.claveSol
+            s.email
             FROM sede AS s 
             INNER JOIN ubigeo AS ub ON ub.idUbigeo = s.idUbigeo  
-            INNER JOIN tipoDocumento AS tp ON tp.idTipoDocumento = s.idTipoDocumento 
             WHERE s.idSede  = 'SD0001'");
             $cmdSede->execute();
 
@@ -852,7 +857,7 @@ class VentasADO
             $totalimporte = $totalconimp + $totalsinimp;
 
             return array(
-                $cmdSede->fetchObject(),
+                (object)array_merge((array)$cmdSede->fetchObject(), (array) $cmdEmpresa->fetchObject()),
                 $cmdCabecera->fetchObject(),
                 $detalle,
                 $cmdCorrelativo->fetchColumn(),

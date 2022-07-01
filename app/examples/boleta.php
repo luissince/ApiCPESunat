@@ -368,7 +368,7 @@ if (!is_array($resultVenta)) {
     chmod('../files/' . $filename . '.xml', 0777);
 
     Sunat::signDocument($filename);
-
+ 
     Sunat::createZip("../files/" . $filename . ".zip", "../files/" . $filename . ".xml", "" . $filename . ".xml");
 
     $soapResult = new SoapResult('../resources/wsdl/billService.wsdl', $filename);
