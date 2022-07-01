@@ -3,4 +3,4 @@
 
 /app/files
 
-/app/database/config.json
+.env

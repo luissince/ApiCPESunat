@@ -1,7 +1,11 @@
 <?php
+require_once('../sunat/lib/phpdotenv/vendor/autoload.php');
 
-$json =  file_get_contents(__DIR__ . "./config.json");
-$object = (object) json_decode($json, true);
+use Dotenv\Dotenv;
+
+$dotenv = Dotenv::createImmutable('../../');
+$dotenv->load();
+
 /**
  * Provee las constantes para conectarse a la base de datos
  * Mysql.
@@ -12,8 +16,8 @@ $object = (object) json_decode($json, true);
 // define("USERNAME", "sa"); // Nombre del usuario
 // define("PASSWORD", "123456"); // Nombre de la constraseña
 
-define("HOSTNAME", $object->HOSTNAME); // Nombre del host
-define("PORT", $object->PORT); // Puerto de servidor
-define("DATABASE", $object->DATABASE); // Nombre de la base de datos
-define("USERNAME", $object->USERNAME); // Nombre del usuario
-define("PASSWORD", $object->PASSWORD); // Nombre de la constraseña
+define("HOSTNAME", $_ENV["HOSTNAME"]); // Nombre del host
+define("PORT",  $_ENV["PORT"]); // Puerto de servidor
+define("DATABASE", $_ENV["DATABASE"]); // Nombre de la base de datos
+define("USERNAME",  $_ENV["USERNAME"]); // Nombre del usuario
+define("PASSWORD",  $_ENV["PASSWORD"]); // Nombre de la constraseña
