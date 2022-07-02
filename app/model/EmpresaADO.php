@@ -29,13 +29,9 @@ class EmpresaADO
             FROM EmpresaTB");
             $cmdEmpresa->execute();
 
-            Tools::httpStatus200();
-
-            return $cmdEmpresa->fetch(PDO::FETCH_OBJ);
+            return Tools::httpStatus200($cmdEmpresa->fetch(PDO::FETCH_OBJ));
         } catch (Exception $ex) {
-            Tools::httpStatus500();
-
-            return $ex->getMessage();
+            return  Tools::httpStatus500($ex->getMessage());
         }
     }
 
@@ -43,50 +39,15 @@ class EmpresaADO
     {
         try {
             $comando = Database::getInstance()->getDb()->prepare("SELECT 
-            TOP 1 
-            e.*,
-            u.IdUbigeo,
-            u.Departamento,
-            u.Provincia,
-            u.Distrito
-            FROM EmpresaTB AS e
-            LEFT JOIN UbigeoTB AS u ON u.IdUbigeo = e.Ubigeo");
+            idEmpresa,
+            documento,
+            razonSocial
+             FROM empresa LIMIT 1");
             $comando->execute();
-            $row = $comando->fetch();
-            $resultEmpresa  = (object)array(
-                "IdEmpresa" => $row['IdEmpresa'],
-                "GiroComercial" => $row['GiroComercial'],
-                "Nombre" => $row['Nombre'],
-                "Telefono" => $row['Telefono'],
-                "Celular" => $row['Celular'],
-                "PaginaWeb" => $row['PaginaWeb'],
-                "Email" => $row['Email'],
-                "Terminos" => $row['Terminos'],
-                "Condiciones" => $row['Condiciones'],
-                "Domicilio" => $row['Domicilio'],
-                "TipoDocumento" => $row['TipoDocumento'],
-                "NumeroDocumento" => $row['NumeroDocumento'],
-                "RazonSocial" => $row['RazonSocial'],
-                "NombreComercial" => $row['NombreComercial'],
-                "Image" => $row['Image'] == null ? "" : base64_encode($row['Image']),
-                "IdUbigeo" => $row['IdUbigeo'] == null ?  0 : $row['IdUbigeo'],
-                "Ubigeo" => $row['Ubigeo'] == null ?  '' : $row['Ubigeo'],
-                "Departamento" => $row['Departamento'] == null ?  '' : $row['Departamento'],
-                "Provincia" => $row['Provincia'] == null ?  '' : $row['Provincia'],
-                "Distrito" => $row['Distrito'] == null ? '' : $row['Distrito'],
-                "UsuarioSol" => $row['UsuarioSol'],
-                "ClaveSol" => $row['ClaveSol'],
-                "CertificadoRuta" => $row['CertificadoRuta'],
-                "CertificadoClave" => $row['CertificadoClave']
-            );
 
-            Tools::httpStatus200();
-
-            return $resultEmpresa;
+            return Tools::httpStatus200($comando->fetchObject());
         } catch (Exception $ex) {
-            Tools::httpStatus500();
-
-            return $ex->getMessage();
+            return Tools::httpStatus500($ex->getMessage());
         }
     }
 
@@ -137,13 +98,9 @@ class EmpresaADO
             $cmdUbigeo = Database::getInstance()->getDb()->prepare("{CALL Sp_Obtener_Ubigeo_BySearch(?)}");
             $cmdUbigeo->bindParam(1, $search, PDO::PARAM_STR);
             $cmdUbigeo->execute();
-            Tools::httpStatus200();
-
-            return $cmdUbigeo->fetchAll(PDO::FETCH_OBJ);
+            return Tools::httpStatus200($cmdUbigeo->fetchAll(PDO::FETCH_OBJ));
         } catch (Exception $ex) {
-            Tools::httpStatus500();
-
-            return $ex->getMessage();
+            return Tools::httpStatus500($ex->getMessage());
         }
     }
 
@@ -151,13 +108,19 @@ class EmpresaADO
     {
         try {
             Database::getInstance()->getDb()->beginTransaction();
+
+            $validate = Database::getInstance()->getDb()->prepare("SELECT * FROM empresa WHERE idEmpresa =?");
+            $validate->bindParam(1, $body['idEmpresa'], PDO::PARAM_STR);
+            $validate->execute();
+            if(!$validate->fetch()){
+                Database::getInstance()->getDb()->rollback();
+                return Tools::httpStatus400("No se encontro los datos de la empresa.");
+            }
+
             $path = "";
             if ($body["certificadoType"] == 0) {
                 Database::getInstance()->getDb()->rollback();
-
-                Tools::httpStatus400();
-
-                return "No se pudo procesar por problemas del cliente.";
+                return Tools::httpStatus400("No se pudo procesar por problemas del cliente.");
             }
 
             $ext = pathinfo($body['certificadoName'], PATHINFO_EXTENSION);
@@ -184,19 +147,23 @@ class EmpresaADO
                 throw new Exception('Error en crear las llaves del certificado.');
             }
 
-            Tools::httpStatus201();
+            $empresa = Database::getInstance()->getDb()->prepare('UPDATE empresa SET
+            certificado=?,
+            claveCert=?
+            WHERE idEmpresa = ?');
+            $empresa->bindParam(1, $file_path, PDO::PARAM_STR);
+            $empresa->bindParam(2, $body['txtClaveCertificado'], PDO::PARAM_STR);
+            $empresa->bindParam(3, $body['idEmpresa'], PDO::PARAM_STR);
+            $empresa->execute();
 
-            return array(
+            return Tools::httpStatus201(array(
                 "state" => 1,
                 "message" => "Se modificó correctamente los datos."
-            );
+            ));
         } catch (Exception $ex) {
             unlink('../resources/' . $file_path);
             Database::getInstance()->getDb()->rollback();
-
-            Tools::httpStatus500();
-
-            return $ex->getMessage();
+            return Tools::httpStatus500($ex->getMessage());
         }
     }
 }

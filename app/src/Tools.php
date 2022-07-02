@@ -57,27 +57,31 @@ class Tools
         return $image == "" ?  '<img src="./../../view/images/logo.png" />' : '<img width="120" src="data:image/(png|jpg|gif);base64, ' . $image . '"/>';
     }
 
-    public static function httpStatus200()
+    public static function httpStatus200($result)
     {
         $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
         header($protocol . ' ' . 200 . ' ' . "OK");
+        return $result;
     }
 
-    public static function httpStatus201()
+    public static function httpStatus201($result)
     {
         $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
         header($protocol . ' ' . 201 . ' ' . "Created");
+        return $result;
     }
 
-    public static function httpStatus400()
+    public static function httpStatus400($result)
     {
         $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
         header($protocol . ' ' . 400 . ' ' . "Bad Request");
+        return $result;
     }
 
-    public static function httpStatus500()
+    public static function httpStatus500($result)
     {
         $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
         header($protocol . ' ' . 500 . ' ' . "Internal Server Error");
+        return $result;
     }
 }

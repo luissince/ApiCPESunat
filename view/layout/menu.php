@@ -6,7 +6,7 @@
                 </div>
 
                 <div class="m-1">
-                        <p class="app-sidebar__user-name">TIENDA FRANCIA</p>
+                        <p class="app-sidebar__user-name">Configurar Su Certificado</p>
                 </div>
         </div>
         <ul class="app-menu">

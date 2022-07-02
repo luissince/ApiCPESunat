@@ -5,13 +5,13 @@
     <a class="app-sidebar__toggle" href="#" data-toggle="sidebar" aria-label="Hide Sidebar"></a>
     <!-- Navbar Right Menu-->
     <ul class="app-nav">
-        <li class="dropdown">
+        <!-- <li class="dropdown">
             <a class="app-nav__item" href="#">
                 <i class="fa fa fa-shopping-cart fa-sm"></i>
                 <span class="app-nav_text">&nbsp Punto de Venta<span>
             </a>
-        </li>
-        <li class="dropdown">
+        </li> -->
+        <!-- <li class="dropdown">
             <a class="app-nav__item" href="#" data-toggle="dropdown" aria-label="Show notifications">
                 <i class="fa fa-bell-o fa-sm"></i>
                 <span id="lblNumeroNotificaciones" class="pl-1 pr-1 badge-warning rounded h7 icon-absolute ">0</span>
@@ -21,10 +21,10 @@
                 </div>
                 <li class="app-notification__footer" id="lblNotificaciones"><span>Lista de Notificaciones</span></li>
             </ul>
-        </li>
+        </li> -->
 
         <!-- User Menu-->
-        <li class="dropdown">
+        <!-- <li class="dropdown">
             <a class="app-nav__item" href="#" data-toggle="dropdown" aria-label="Open Profile Menu">
                 <img src="images/usuario.png" class="user-image" alt="Usuario">
             </a>
@@ -34,30 +34,17 @@
                 </li>
                 <li class="user-footer">
                     <div class="pull-left">
-                        <!-- <a href="perfil.php" class="btn btn-secondary btn-flat">
+                        <a href="perfil.php" class="btn btn-secondary btn-flat">
                             <i class="fa fa-user fa-sm"></i> Perfil Usuario
-                        </a> -->
+                        </a>
                     </div>
                     <div class="pull-right">
-                        <!-- <a href="logout.php" id="btnCloseSesion" class="btn btn-secondary btn-flat">
+                        <a href="logout.php" id="btnCloseSesion" class="btn btn-secondary btn-flat">
                             <i class="fa fa-sign-out fa-sm"></i> Cerrar Sesión
-                        </a> -->
+                        </a>
                     </div>
                 </li>
-                <!-- 
-                    <li>
-                        <a class="dropdown-item" href="#">
-                            <i class="fa fa-user fa-lg"></i> 
-                            <span class="app-nav_text">Perfil<span>                         
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="logout.php">
-                            <i class="fa fa-sign-out fa-lg"></i> Cerrar Sessión
-                        </a>
-                    </li> 
-            -->
             </ul>
-        </li>
+        </li> -->
     </ul>
 </header>
