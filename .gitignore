@@ -1,6 +1,7 @@
-/app/resource/*.p12
-/app/resource/*.pfx
-/app/resource/*.pem
+/app/resources/*.p12
+/app/resources/*.pfx
+/app/resources/*.pem
+/app/resources/*.pem
 
 /app/files
 
