@@ -1,4 +1,5 @@
 /app/resource/*.p12
+/app/resource/*.pfx
 /app/resource/*.pem
 
 /app/files
