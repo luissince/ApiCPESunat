@@ -173,8 +173,8 @@ class VentasADO
     {
         try {
             Database::getInstance()->getDb()->beginTransaction();
-            $comando = Database::getInstance()->getDb()->prepare("UPDATE VentaTB SET 
-            Xmlsunat = ? , Xmldescripcion = ? WHERE IdVenta = ?");
+            $comando = Database::getInstance()->getDb()->prepare("UPDATE cobro SET 
+            Xmlsunat = ? , Xmldescripcion = ? WHERE idCobro = ?");
             $comando->bindParam(1, $codigo, PDO::PARAM_STR);
             $comando->bindParam(2, $descripcion, PDO::PARAM_STR);
             $comando->bindParam(3, $idVenta, PDO::PARAM_STR);

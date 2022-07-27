@@ -387,7 +387,7 @@ if (!is_array($resultVenta)) {
                 "description" => $soapResult->getDescription()
             ));
         } else {
-            // VentasADO::CambiarEstadoSunatVentaUnico($idventa, $soapResult->getCode(), $soapResult->getDescription());
+            VentasADO::CambiarEstadoSunatVentaUnico($idCobro, $soapResult->getCode(), $soapResult->getDescription());
             $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
             header($protocol . ' ' . 200 . ' ' . "OK");
 
