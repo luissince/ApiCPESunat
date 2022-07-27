@@ -18,6 +18,8 @@ class ComposerAutoloader
             if (file_exists($relative_class)) {
                 require_once $relative_class;
             }
+
+            require_once __DIR__ . './../sunat/lib/phpdotenv/vendor/autoload.php'; 
         });
     }
 }

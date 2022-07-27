@@ -14,8 +14,8 @@ use SysSoftIntegra\Model\VentasADO;
 
 require __DIR__ . './../src/autoload.php';
 
-$idventa = $_GET['idventa'];
-$resultVenta = VentasADO::DetalleVentaSunat($idventa);
+$idCobro  = $_GET['idCobro'];
+$resultVenta = VentasADO::DetalleVentaSunat($idCobro);
 $gcl = new NumberLleters();
 
 
@@ -376,7 +376,7 @@ if (!is_array($resultVenta)) {
 
     if ($soapResult->isSuccess()) {
         if ($soapResult->isAccepted()) {
-            VentasADO::CambiarEstadoSunatVenta($idventa, $soapResult->getCode(), $soapResult->getDescription(), $soapResult->getHashCode(), Sunat::getXmlSign());
+            VentasADO::CambiarEstadoSunatVenta($idCobro, $soapResult->getCode(), $soapResult->getDescription(), $soapResult->getHashCode(), Sunat::getXmlSign());
             $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
             header($protocol . ' ' . 200 . ' ' . "OK");
 

@@ -1,9 +1,13 @@
 <?php
-
+namespace SysSoftIntegra\DataBase; 
 /**
  * Clase que envuelve una instancia de la clase PDO
  * para el manejo de la base de datos
  */
+
+use PDOException;
+use PDO;
+
 require_once 'DbCredenciales.php';
 
 class Database

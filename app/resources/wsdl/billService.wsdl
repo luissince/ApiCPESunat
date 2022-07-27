@@ -28,7 +28,7 @@
 <soap11:body use="literal"/></wsdl:input>
 <wsdl:output name="sendSummaryResponse">
 <soap11:body use="literal"/></wsdl:output></wsdl:operation></wsdl:binding>
-<wsdl:service name="billService">
+<!-- <wsdl:service name="billService">
 <wsdl:port name="BillServicePort" binding="ns0:BillServicePortBinding">
 <soap11:address location="https://e-factura.sunat.gob.pe:443/ol-ti-itcpfegem/billService"/>
 </wsdl:port>
@@ -38,13 +38,13 @@
 <wsdl:port name="BillServicePort.3" binding="ns0:BillServicePortBinding">
 <soap11:address location="https://e-factura.sunat.gob.pe:443/ol-ti-itcpfegem/billService"/>
 </wsdl:port>
-</wsdl:service>
-<!-- <wsdl:service name="billService">
+</wsdl:service> -->
+<wsdl:service name="billService">
 <wsdl:port name="BillServicePort" binding="ns0:BillServicePortBinding">
 <soap11:address location="https://e-beta.sunat.gob.pe:443/ol-ti-itcpfegem-beta/billService"/>
 </wsdl:port>
 <wsdl:port name="BillServicePort.1" binding="ns0:BillServicePortBinding">
 <soap11:address location="https://e-beta.sunat.gob.pe:443/ol-ti-itcpfegem-beta/billService"/>
 </wsdl:port>
-</wsdl:service> -->
+</wsdl:service>
 </wsdl:definitions>

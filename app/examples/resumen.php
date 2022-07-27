@@ -14,8 +14,8 @@ use SysSoftIntegra\Model\VentasADO;
 
 require __DIR__ . './../src/autoload.php';
 
-$idventa = $_GET['idventa'];
-$resultVenta = VentasADO::DetalleVentaSunat($idventa);
+$idCobro  = $_GET['idCobro'];
+$resultVenta = VentasADO::DetalleVentaSunat($idCobro);
 
 if (!is_array($resultVenta)) {
     echo json_encode(array(
@@ -150,7 +150,7 @@ if (!is_array($resultVenta)) {
         $PaidAmount->setAttribute('currencyID', $cabecera->codiso);
         $InstructionID = $xml->createElement('cbc:InstructionID', "01");
         $BillingPayment->appendChild($InstructionID);
-    
+
         $cac_TaxTotal = $xml->createElement('cac:TaxTotal');
         $cac_TaxTotal = $SummaryDocumentsLine->appendChild($cac_TaxTotal);
         $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($sumaconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));

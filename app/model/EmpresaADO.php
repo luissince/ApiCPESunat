@@ -3,11 +3,10 @@
 namespace SysSoftIntegra\Model;
 
 use SysSoftIntegra\Src\Tools;
-use Database;
+use SysSoftIntegra\DataBase\Database;
 use PDO;
 use Exception;
 
-require_once __DIR__ . './../database/DataBaseConexion.php';
 
 class EmpresaADO
 {

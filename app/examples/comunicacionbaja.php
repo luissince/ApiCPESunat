@@ -14,8 +14,8 @@ use SysSoftIntegra\Model\VentasADO;
 
 require __DIR__ . './../src/autoload.php';
 
-$idventa = $_GET['idventa'];
-$resultVenta = VentasADO::DetalleVentaSunat($idventa);
+$idCobro  = $_GET['idCobro'];
+$resultVenta = VentasADO::DetalleVentaSunat($idCobro );
 
 if (!is_array($resultVenta)) {
     echo json_encode(array(
