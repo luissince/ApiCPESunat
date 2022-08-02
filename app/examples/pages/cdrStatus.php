@@ -8,6 +8,7 @@ header('Content-Type: application/json; charset=UTF-8');
 
 use SysSoftIntegra\Src\SoapResult;
 use SysSoftIntegra\Src\Sunat;
+use SysSoftIntegra\Src\Response;
 
 require __DIR__ . './../../src/autoload.php';
 
@@ -35,12 +36,11 @@ $arguments = [
 
 $soapResult = new SoapResult('../../resources/wsdl/billConsultService.wsdl', implode('-', $arguments));
 
-
 if ($get['cdr'] !== "") {
     $soapResult->sendGetStatusCdr(Sunat::xmlGetStatusCdr($get));
     if ($soapResult->isSuccess()) {
         if ($soapResult->isAccepted()) {
-            echo json_encode(array(
+            Response::sendSuccess(array(
                 "state" => $soapResult->isSuccess(),
                 "accepted" => $soapResult->isAccepted(),
                 "code" => $soapResult->getCode(),
@@ -49,7 +49,7 @@ if ($get['cdr'] !== "") {
                 "file" => $soapResult->getFile(),
             ));
         } else {
-            echo json_encode(array(
+            Response::sendSuccess(array(
                 "state" => $soapResult->isSuccess(),
                 "accepted" => $soapResult->isAccepted(),
                 "code" => $soapResult->getCode(),
@@ -57,7 +57,7 @@ if ($get['cdr'] !== "") {
             ));
         }
     } else {
-        echo json_encode(array(
+        Response::sendSuccess(array(
             "state" => $soapResult->isSuccess(),
             "code" => $soapResult->getCode(),
             "accepted" => $soapResult->isAccepted(),
@@ -68,14 +68,14 @@ if ($get['cdr'] !== "") {
     $soapResult->sendGetStatusValid(Sunat::xmlGetValidService($get));
     if ($soapResult->isSuccess()) {
         if ($soapResult->isAccepted()) {
-            echo json_encode(array(
+            Response::sendSuccess(array(
                 "state" => $soapResult->isSuccess(),
                 "accepted" => $soapResult->isAccepted(),
                 "code" => $soapResult->getCode(),
                 "message" => $soapResult->getMessage()
             ));
         } else {
-            echo json_encode(array(
+            Response::sendSuccess(array(
                 "state" => $soapResult->isSuccess(),
                 "accepted" => $soapResult->isAccepted(),
                 "code" => $soapResult->getCode(),
@@ -83,7 +83,7 @@ if ($get['cdr'] !== "") {
             ));
         }
     } else {
-        echo json_encode(array(
+        Response::sendSuccess(array(
             "state" => $soapResult->isSuccess(),
             "code" => $soapResult->getCode(),
             "accepted" => $soapResult->isAccepted(),

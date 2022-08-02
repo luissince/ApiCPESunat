@@ -140,7 +140,7 @@ class VentasADO
         }
     }
 
-    public static function CambiarEstadoSunatVenta($idCobro, $codigo, $descripcion, $hash, $xmlgenerado)
+    public static function SunatSuccess($idCobro, $codigo, $descripcion, $hash, $xmlgenerado)
     {
         try {
             Database::getInstance()->getDb()->beginTransaction();
@@ -152,15 +152,6 @@ class VentasADO
             $cmdValidate->bindParam(4, $xmlgenerado, PDO::PARAM_STR);
             $cmdValidate->bindParam(5, $idCobro, PDO::PARAM_STR);
             $cmdValidate->execute();
-
-            // $comando = Database::getInstance()->getDb()->prepare("UPDATE VentaTB SET 
-            // Xmlsunat = ? , Xmldescripcion = ?, CodigoHash = ?,Xmlgenerado = ? WHERE IdVenta = ?");
-            // $comando->bindParam(1, $codigo, PDO::PARAM_STR);
-            // $comando->bindParam(2, $descripcion, PDO::PARAM_STR);
-            // $comando->bindParam(3, $hash, PDO::PARAM_STR);
-            // $comando->bindParam(4, $xmlgenerado, PDO::PARAM_STR);
-            // $comando->bindParam(5, $idVenta, PDO::PARAM_STR);
-            // $comando->execute();
             Database::getInstance()->getDb()->commit();
             return "updated";
         } catch (Exception $ex) {
@@ -169,15 +160,15 @@ class VentasADO
         }
     }
 
-    public static function CambiarEstadoSunatVentaUnico($idVenta, $codigo, $descripcion)
+    public static function SunatWarning($idCobro, $codigo, $descripcion)
     {
         try {
             Database::getInstance()->getDb()->beginTransaction();
             $comando = Database::getInstance()->getDb()->prepare("UPDATE cobro SET 
-            Xmlsunat = ? , Xmldescripcion = ? WHERE idCobro = ?");
+            xmlSunat = ? , xmlDescripcion = ? WHERE idCobro = ?");
             $comando->bindParam(1, $codigo, PDO::PARAM_STR);
             $comando->bindParam(2, $descripcion, PDO::PARAM_STR);
-            $comando->bindParam(3, $idVenta, PDO::PARAM_STR);
+            $comando->bindParam(3, $idCobro, PDO::PARAM_STR);
             $comando->execute();
             Database::getInstance()->getDb()->commit();
             return "updated";
@@ -187,17 +178,17 @@ class VentasADO
         }
     }
 
-    public static function CambiarEstadoSunatResumen($idVenta, $codigo, $descripcion, $correlativo, $fechaCorrelativo)
+    public static function SunatResumenSuccess($idCobro, $codigo, $descripcion, $correlativo, $fechaCorrelativo)
     {
         try {
             Database::getInstance()->getDb()->beginTransaction();
-            $comando = Database::getInstance()->getDb()->prepare("UPDATE VentaTB SET 
-              Xmlsunat = ? , Xmldescripcion = ?,Correlativo=?,FechaCorrelativo=? WHERE IdVenta = ?");
+            $comando = Database::getInstance()->getDb()->prepare("UPDATE cobro SET 
+              xmlSunat = ?, xmlDescripcion = ?, correlativo=?, fechaCorrelativo=? WHERE idCobro = ?");
             $comando->bindParam(1, $codigo, PDO::PARAM_STR);
             $comando->bindParam(2, $descripcion, PDO::PARAM_STR);
             $comando->bindParam(3, $correlativo, PDO::PARAM_INT);
             $comando->bindParam(4, $fechaCorrelativo, PDO::PARAM_STR);
-            $comando->bindParam(5, $idVenta, PDO::PARAM_STR);
+            $comando->bindParam(5, $idCobro, PDO::PARAM_STR);
             $comando->execute();
             Database::getInstance()->getDb()->commit();
             return "updated";

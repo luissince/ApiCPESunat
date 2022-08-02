@@ -15,24 +15,6 @@ class EmpresaADO
     {
     }
 
-    public static function Index()
-    {
-        try {
-            $cmdEmpresa = Database::getInstance()->getDb()->prepare("SELECT 
-            Telefono,
-            Celular,
-            Domicilio,
-            Email,
-            Telefono,
-            NombreComercial
-            FROM EmpresaTB");
-            $cmdEmpresa->execute();
-
-            return Tools::httpStatus200($cmdEmpresa->fetch(PDO::FETCH_OBJ));
-        } catch (Exception $ex) {
-            return  Tools::httpStatus500($ex->getMessage());
-        }
-    }
 
     public static function ObtenerEmpresa()
     {
@@ -50,58 +32,6 @@ class EmpresaADO
         }
     }
 
-    public static function ReporteEmpresa()
-    {
-        try {
-            $cmdEmpresa = Database::getInstance()->getDb()->prepare("SELECT TOP 1 
-            d.IdAuxiliar,
-            e.NumeroDocumento,
-            e.RazonSocial,
-            e.NombreComercial,
-            e.Domicilio,
-            e.Telefono,
-            e.Celular,
-            e.Email,
-            e.Terminos,
-            e.Condiciones,
-            e.PaginaWeb,
-            e.Image
-            FROM EmpresaTB AS e 
-            INNER JOIN DetalleTB AS d ON e.TipoDocumento = d.IdDetalle AND d.IdMantenimiento = '0003'");
-            $cmdEmpresa->execute();
-            $rowEmpresa = $cmdEmpresa->fetch();
-            $empresa  = (object)array(
-                "IdAuxiliar" => $rowEmpresa['IdAuxiliar'],
-                "NumeroDocumento" => $rowEmpresa['NumeroDocumento'],
-                "RazonSocial" => $rowEmpresa['RazonSocial'],
-                "NombreComercial" => $rowEmpresa['NombreComercial'],
-                "Domicilio" => $rowEmpresa['Domicilio'],
-                "Telefono" => $rowEmpresa['Telefono'],
-                "PaginaWeb" => $rowEmpresa['PaginaWeb'],
-                "Email" => $rowEmpresa['Email'],
-                "Terminos" => $rowEmpresa['Terminos'],
-                "Celular" => $rowEmpresa['Celular'],
-                "Condiciones" => $rowEmpresa['Condiciones'],
-                "Image" => $rowEmpresa['Image'] == null ? "" : base64_encode($rowEmpresa['Image'])
-            );
-
-            return  $empresa;
-        } catch (Exception $ex) {
-            return $ex->getMessage();
-        }
-    }
-
-    public static function FiltrarUbigeo(string $search)
-    {
-        try {
-            $cmdUbigeo = Database::getInstance()->getDb()->prepare("{CALL Sp_Obtener_Ubigeo_BySearch(?)}");
-            $cmdUbigeo->bindParam(1, $search, PDO::PARAM_STR);
-            $cmdUbigeo->execute();
-            return Tools::httpStatus200($cmdUbigeo->fetchAll(PDO::FETCH_OBJ));
-        } catch (Exception $ex) {
-            return Tools::httpStatus500($ex->getMessage());
-        }
-    }
 
     public static function CrudEmpresa($body)
     {
@@ -154,6 +84,8 @@ class EmpresaADO
             $empresa->bindParam(2, $body['txtClaveCertificado'], PDO::PARAM_STR);
             $empresa->bindParam(3, $body['idEmpresa'], PDO::PARAM_STR);
             $empresa->execute();
+
+            Database::getInstance()->getDb()->commit();
 
             return Tools::httpStatus201(array(
                 "state" => 1,

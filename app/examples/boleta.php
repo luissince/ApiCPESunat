@@ -11,6 +11,7 @@ use SysSoftIntegra\Src\SoapResult;
 use SysSoftIntegra\Src\Sunat;
 use SysSoftIntegra\Src\NumberLleters;
 use SysSoftIntegra\Model\VentasADO;
+use SysSoftIntegra\Src\Response;
 
 require __DIR__ . './../src/autoload.php';
 
@@ -368,7 +369,7 @@ if (!is_array($resultVenta)) {
     chmod('../files/' . $filename . '.xml', 0777);
 
     Sunat::signDocument($filename);
- 
+
     Sunat::createZip("../files/" . $filename . ".zip", "../files/" . $filename . ".xml", "" . $filename . ".xml");
 
     $soapResult = new SoapResult('../resources/wsdl/billService.wsdl', $filename);
@@ -376,45 +377,33 @@ if (!is_array($resultVenta)) {
 
     if ($soapResult->isSuccess()) {
         if ($soapResult->isAccepted()) {
-            VentasADO::CambiarEstadoSunatVenta($idCobro, $soapResult->getCode(), $soapResult->getDescription(), $soapResult->getHashCode(), Sunat::getXmlSign());
-            $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-            header($protocol . ' ' . 200 . ' ' . "OK");
-
-            echo json_encode(array(
+            VentasADO::SunatSuccess($idCobro, $soapResult->getCode(), $soapResult->getDescription(), $soapResult->getHashCode(), Sunat::getXmlSign());
+            Response::sendSuccess([
                 "state" => $soapResult->isSuccess(),
                 "accept" => $soapResult->isAccepted(),
                 "code" => $soapResult->getCode(),
                 "description" => $soapResult->getDescription()
-            ));
+            ]);
         } else {
-            VentasADO::CambiarEstadoSunatVentaUnico($idCobro, $soapResult->getCode(), $soapResult->getDescription());
-            $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-            header($protocol . ' ' . 200 . ' ' . "OK");
-
-            echo json_encode(array(
+            VentasADO::SunatWarning($idCobro, $soapResult->getCode(), $soapResult->getDescription());
+            Response::sendSuccess([
                 "state" => $soapResult->isSuccess(),
                 "accept" => $soapResult->isAccepted(),
                 "code" => $soapResult->getCode(),
                 "description" => $soapResult->getDescription()
-            ));
+            ]);
         }
     } else {
         if ($soapResult->getCode() == "1033") {
-            // VentasADO::CambiarEstadoSunatVentaUnico($idventa, "0", $soapResult->getDescription());
-            $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-            header($protocol . ' ' . 200 . ' ' . "OK");
-
-            echo json_encode(array(
+            VentasADO::SunatWarning($idCobro, $soapResult->getCode(), $soapResult->getDescription());
+            Response::sendSuccess([
                 "state" => false,
                 "code" => $soapResult->getCode(),
                 "description" => $soapResult->getDescription()
-            ));
+            ]);
         } else {
-            // VentasADO::CambiarEstadoSunatVentaUnico($idventa, $soapResult->getCode(), $soapResult->getDescription());
-            $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-            header($protocol . ' ' . 500 . ' ' . "Internal Server Error");
-
-            echo json_encode($soapResult->getDescription());
+            VentasADO::SunatWarning($idCobro, $soapResult->getCode(), $soapResult->getDescription());
+            Response::sendError($soapResult->getDescription());
         }
     }
 }

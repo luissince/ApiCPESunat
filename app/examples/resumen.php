@@ -1,7 +1,6 @@
 ﻿<?php
 
 set_time_limit(300);
-session_start();
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
@@ -11,6 +10,7 @@ header('Content-Type: application/json; charset=UTF-8');
 use SysSoftIntegra\Src\SoapResult;
 use SysSoftIntegra\Src\Sunat;
 use SysSoftIntegra\Model\VentasADO;
+use SysSoftIntegra\Src\Response;
 
 require __DIR__ . './../src/autoload.php';
 
@@ -113,7 +113,7 @@ if (!is_array($resultVenta)) {
     $PartyLegalEntity = $xml->createElement('cac:PartyLegalEntity');
     $PartyLegalEntity = $cac_party->appendChild($PartyLegalEntity);
     $cbc = $xml->createElement('cbc:RegistrationName');
-    $cbc->appendChild($xml->createCDATASection($empresa->nombreEmpresa));
+    $cbc->appendChild($xml->createCDATASection($empresa->razonSocial));
     $cbc = $PartyLegalEntity->appendChild($cbc);
 
     // DOCUMENTO ASOCIADO}
@@ -240,22 +240,18 @@ if (!is_array($resultVenta)) {
         $soapResult->sendGetStatus(Sunat::xmlGetStatus($empresa->ruc,  $empresa->useSol, $empresa->claveSol, $soapResult->getTicket()));
         if ($soapResult->isSuccess()) {
             if ($soapResult->isAccepted()) {
-                // VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
-                $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-                header($protocol . ' ' . 200 . ' ' . "OK");
-
-                echo json_encode(array(
+                VentasADO::SunatResumenSuccess($idCobro, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+                
+                Response::sendSuccess(array(
                     "state" => $soapResult->isSuccess(),
                     "accept" => $soapResult->isAccepted(),
                     "code" => $soapResult->getCode(),
                     "description" => $soapResult->getDescription()
                 ));
             } else {
-                // VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
-                $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-                header($protocol . ' ' . 200 . ' ' . "OK");
+                VentasADO::SunatResumenSuccess($idCobro, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
 
-                echo json_encode(array(
+                Response::sendSuccess(array(
                     "state" => $soapResult->isSuccess(),
                     "accept" => $soapResult->isAccepted(),
                     "code" => $soapResult->getCode(),
@@ -263,21 +259,17 @@ if (!is_array($resultVenta)) {
                 ));
             }
         } else {
-            // VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
-            $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-            header($protocol . ' ' . 200 . ' ' . "OK");
+            VentasADO::SunatResumenSuccess($idCobro, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
 
-            echo json_encode(array(
+            Response::sendSuccess(array(
                 "state" => false,
                 "code" => $soapResult->getCode(),
                 "description" => $soapResult->getDescription()
             ));
         }
     } else {
-        // VentasADO::CambiarEstadoSunatResumen($idventa, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
-        $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-        header($protocol . ' ' . 500 . ' ' . "Internal Server Error");
+        VentasADO::SunatResumenSuccess($idCobro, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
 
-        echo json_encode($soapResult->getDescription());
+        Response::sendError($soapResult->getDescription());
     }
 }
