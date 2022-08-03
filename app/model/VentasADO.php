@@ -27,9 +27,18 @@ class VentasADO
         return $ret;
     }
 
-    public static function DetalleVentaSunat($idCobro)
+    public static function DetalleVentaSunat($idCobro, $tipo)
     {
         try {
+            if ($tipo == "a") {
+                $cmdCobro = Database::getInstance()->getDb()->prepare("SELECT * FROM cobro WHERE idCobro = ? AND estado = 1");
+                $cmdCobro->bindParam(1, $idCobro, PDO::PARAM_STR);
+                $cmdCobro->execute();
+                if ($cmdCobro->fetch()) {
+                    throw new Exception("No se puede realizar un resumen diario ya que se encuentra en estado cobrado, tiene que anularlo para continuar con el proceso.");
+                }
+            }
+
             $cmdCabecera = Database::getInstance()->getDb()->prepare("SELECT 
             co.codigo AS codcomprobante,
             v.serie,
@@ -197,6 +206,4 @@ class VentasADO
             return $ex->getMessage();
         }
     }
-
-
 }

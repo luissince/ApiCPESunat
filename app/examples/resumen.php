@@ -15,14 +15,10 @@ use SysSoftIntegra\Src\Response;
 require __DIR__ . './../src/autoload.php';
 
 $idCobro  = $_GET['idCobro'];
-$resultVenta = VentasADO::DetalleVentaSunat($idCobro);
+$resultVenta = VentasADO::DetalleVentaSunat($idCobro,"a");
 
 if (!is_array($resultVenta)) {
-    echo json_encode(array(
-        "state" => false,
-        "code" => "-1",
-        "description" => $resultVenta
-    ));
+    Response::sendError($resultVenta);
 } else {
 
     $empresa = $resultVenta[0];
