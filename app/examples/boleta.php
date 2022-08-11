@@ -395,7 +395,7 @@ if (!is_array($resultVenta)) {
         }
     } else {
         if ($soapResult->getCode() == "1033") {
-            VentasADO::SunatWarning($idCobro, $soapResult->getCode(), $soapResult->getDescription());
+            VentasADO::SunatWarning($idCobro, "0", $soapResult->getDescription());
             Response::sendSuccess([
                 "state" => false,
                 "code" => $soapResult->getCode(),
