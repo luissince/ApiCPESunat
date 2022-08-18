@@ -6,6 +6,7 @@ class Autoload_Static
     {
         return array(
             'SysSoftIntegra\\Model\\VentasADO' => __DIR__  . '/../model/VentasADO.php',
+            'SysSoftIntegra\\Model\\NotaCreditoADO' => __DIR__  . '/../model/NotaCreditoADO.php',
             'SysSoftIntegra\\Model\\EmpresaADO' => __DIR__  . '/../model/EmpresaADO.php',
             
             'SysSoftIntegra\\Src\\Sunat' => __DIR__  . '/Sunat.php',

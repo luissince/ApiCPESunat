@@ -6,55 +6,47 @@ use PDO;
 use SysSoftIntegra\DataBase\Database;
 use Exception;
 use DateTime;
-use PDOException;
 
-class VentasADO
+
+class NotaCreditoADO
 {
 
     function construct()
     {
     }
 
-    public static function DetalleVentaSunat($idCobro, $tipo)
+    public static function DetalleNotaCreditoSunat($idNotaCredito)
     {
         try {
-            if ($tipo == "a") {
-                $cmdCobro = Database::getInstance()->getDb()->prepare("SELECT * FROM cobro WHERE idCobro = ? AND estado = 1");
-                $cmdCobro->bindParam(1, $idCobro, PDO::PARAM_STR);
-                $cmdCobro->execute();
-                if ($cmdCobro->fetch()) {
-                    throw new Exception("No se puede realizar un resumen diario ya que se encuentra en estado cobrado, tiene que anularlo para continuar con el proceso.");
-                }
-            }
-
             $cmdCabecera = Database::getInstance()->getDb()->prepare("SELECT 
             co.codigo AS codcomprobante,
-            v.serie,
-            v.numeracion,
-            v.fecha,
-            v.hora,
+            nc.serie,
+            nc.numeracion,
+            nc.fecha,
+            nc.hora,
             1 AS tipo,
-            IFNULL(v.correlativo,0) AS correlativo,
             m.nombre AS nommoneda,
             m.simbolo,
             m.codiso,
             tp.codigo AS coddocumento,
             cl.documento,
-            cl.informacion
-            FROM cobro AS v 
-            INNER JOIN comprobante AS co ON co.idComprobante  = v.idComprobante 
-            INNER JOIN moneda AS m ON m.idMoneda = v.idMoneda
-            INNER JOIN cliente AS cl ON cl.idCliente  = v.idCliente 
+            cl.informacion,
+            mt.codigo AS codmotivo,
+            mt.nombre AS descmotivo,
+            cop.codigo AS codcomprobantemod,
+            c.serie AS seriemod,
+            c.numeracion AS numeracionmod
+            FROM notaCredito AS nc 
+            INNER JOIN motivo AS mt ON mt.idMotivo = nc.idMotivo 
+            INNER JOIN comprobante AS co ON co.idComprobante  = nc.idComprobante 
+            INNER JOIN moneda AS m ON m.idMoneda = nc.idMoneda
+            INNER JOIN cliente AS cl ON cl.idCliente  = nc.idCliente 
             INNER JOIN tipoDocumento AS tp ON tp.idTipoDocumento = cl.idTipoDocumento 
-            WHERE v.idCobro  = ?");
-            $cmdCabecera->bindParam(1, $idCobro, PDO::PARAM_STR);
+            INNER JOIN cobro AS c ON nc.idCobro = c.idCobro
+            INNER JOIN comprobante AS cop ON cop.idComprobante  = c.idComprobante 
+            WHERE nc.idNotaCredito = ?");
+            $cmdCabecera->bindParam(1, $idNotaCredito, PDO::PARAM_STR);
             $cmdCabecera->execute();
-
-            $cmdCorrelativo = Database::getInstance()->getDb()->prepare("SELECT 
-            MAX(IFNULL(correlativo,0)) AS correlativo 
-            FROM cobro 
-            WHERE fechaCorrelativo = CURRENT_DATE()");
-            $cmdCorrelativo->execute();
 
             $cmdEmpresa = Database::getInstance()->getDb()->prepare("SELECT
             tp.codigo AS coddocumento,
@@ -82,22 +74,23 @@ class VentasADO
             $cmdSede->execute();
 
             $cmdDetalle = Database::getInstance()->getDb()->prepare("SELECT 
-            md.codigo AS unidad,
             CASE 
-                WHEN cv.idPlazo = 0 THEN 'CUOTA INICIAL'
-                ELSE CONCAT('CUOTA',' ',pl.cuota)
-            END  AS descripcion,
-            cv.precio,
-            1 AS cantidad,
-            im.porcentaje AS impporcen,
-            im.codigo AS impcodido
-            FROM
-            cobroVenta AS cv
-            LEFT JOIN plazo AS pl ON pl.idPlazo = cv.idPlazo  
-            INNER JOIN medida AS md ON md.idMedida = cv.idMedida 
-            INNER JOIN impuesto AS im ON im.idImpuesto = cv.idImpuesto
-            WHERE cv.idCobro  = ?");
-            $cmdDetalle->bindParam(1, $idCobro, PDO::PARAM_STR);
+            WHEN nc.tipo = 0 THEN CONCAT('CUOTA',' ',pl.cuota)
+            ELSE co.nombre END AS descripcion,
+            md.codigo AS unidad,
+            nc.cantidad,
+            nc.precio,
+            nc.idImpuesto,
+            imp.nombre AS impuesto,
+            imp.porcentaje AS impporcen,
+            imp.codigo AS impcodido
+            FROM notaCreditoDetalle AS nc 
+            LEFT JOIN concepto AS co ON co.idConcepto = nc.idConcepto
+            LEFT JOIN plazo AS pl ON pl.idPlazo = nc.idPlazo 
+            INNER JOIN medida AS md ON md.idMedida = nc.idMedida
+            INNER JOIN impuesto AS imp ON imp.idImpuesto = nc.idImpuesto
+            WHERE nc.idNotaCredito = ?");
+            $cmdDetalle->bindParam(1, $idNotaCredito, PDO::PARAM_STR);
             $cmdDetalle->execute();
 
             $detalle =  $cmdDetalle->fetchAll(PDO::FETCH_OBJ);
@@ -126,7 +119,6 @@ class VentasADO
                 (object)array_merge((array)$cmdSede->fetchObject(), (array) $cmdEmpresa->fetchObject()),
                 $cmdCabecera->fetchObject(),
                 $detalle,
-                $cmdCorrelativo->fetchColumn(),
                 array(
                     "opegravada" => $opegravada,
                     "opeexonerada" => $opeexogenada,
@@ -135,25 +127,22 @@ class VentasADO
                     "totalimporte" => $totalimporte
                 )
             );
-        }catch(PDOException $ex){
-            return $ex->getMessage();
-        } 
-        catch (Exception $ex) {
+        } catch (Exception $ex) {
             return $ex->getMessage();
         }
     }
 
-    public static function SunatSuccess($idCobro, $codigo, $descripcion, $hash, $xmlgenerado)
+    public static function SunatSuccess($idNotaCredito , $codigo, $descripcion, $hash, $xmlgenerado)
     {
         try {
             Database::getInstance()->getDb()->beginTransaction();
-            $cmdValidate = Database::getInstance()->getDb()->prepare("UPDATE cobro SET
-            xmlSunat=?, xmlDescripcion=?, codigoHash=?, xmlGenerado=? WHERE idCobro  = ?");
+            $cmdValidate = Database::getInstance()->getDb()->prepare("UPDATE notaCredito SET
+            xmlSunat=?, xmlDescripcion=?, codigoHash=?, xmlGenerado=? WHERE idNotaCredito   = ?");
             $cmdValidate->bindParam(1, $codigo, PDO::PARAM_STR);
             $cmdValidate->bindParam(2, $descripcion, PDO::PARAM_STR);
             $cmdValidate->bindParam(3, $hash, PDO::PARAM_STR);
             $cmdValidate->bindParam(4, $xmlgenerado, PDO::PARAM_STR);
-            $cmdValidate->bindParam(5, $idCobro, PDO::PARAM_STR);
+            $cmdValidate->bindParam(5, $idNotaCredito , PDO::PARAM_STR);
             $cmdValidate->execute();
             Database::getInstance()->getDb()->commit();
             return "updated";
@@ -167,8 +156,8 @@ class VentasADO
     {
         try {
             Database::getInstance()->getDb()->beginTransaction();
-            $comando = Database::getInstance()->getDb()->prepare("UPDATE cobro SET 
-            xmlSunat = ?, xmlDescripcion = ? WHERE idCobro = ?");
+            $comando = Database::getInstance()->getDb()->prepare("UPDATE notaCredito SET 
+            xmlSunat = ?, xmlDescripcion = ? WHERE idNotaCredito  = ?");
             $comando->bindParam(1, $codigo, PDO::PARAM_STR);
             $comando->bindParam(2, $descripcion, PDO::PARAM_STR);
             $comando->bindParam(3, $idCobro, PDO::PARAM_STR);

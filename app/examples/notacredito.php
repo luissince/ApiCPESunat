@@ -11,25 +11,29 @@ use SysSoftIntegra\Src\SoapResult;
 use SysSoftIntegra\Src\Sunat;
 use SysSoftIntegra\Src\NumberLleters;
 use SysSoftIntegra\Model\NotaCreditoADO;
+use SysSoftIntegra\Src\Response;
 
 require __DIR__ . './../src/autoload.php';
 
 $idNotaCredito = $_GET["idNotaCredito"];
-$result = NotaCreditoADO::ObtenerNotaCreditoById($idNotaCredito);
+$result = NotaCreditoADO::DetalleNotaCreditoSunat($idNotaCredito);
 $gcl = new NumberLleters();
 
 if (!is_array($result)) {
-    echo json_encode(array(
-        "state" => false,
-        "code" => "-1",
-        "description" => $result
-    ));
+    Response::sendError($result);
 } else {
 
-    $notacredito = $result[0];
-    $empresa = $result[1];
+    $empresa = $result[0];
+    $cabecera = $result[1];
     $detalle = $result[2];
-    $totales = $result[3];
+
+    $opegravada = $result[3]["opegravada"];
+    $opeexogenada = $result[3]["opeexonerada"];
+
+    $sumasinimp = $result[3]["totalsinimpuesto"];
+    $sumaconimp = $result[3]["totalconimpuesto"];
+
+    $totalimporte = $result[3]["totalimporte"];
 
     $xml = new DomDocument('1.0', 'utf-8');
     // $xml->standalone         = true;
@@ -53,34 +57,34 @@ if (!is_array($result)) {
     $contents = $xml->createElement('ext:ExtensionContent', ' ');
     $contents = $ext->appendChild($contents);
 
-    $date = new DateTime($notacredito->FechaNotaCredito . "T" . $notacredito->HoraNotaCredito);
+    $date = new DateTime($cabecera->fecha . "T" . $cabecera->hora);
 
     //Version de UBL 2.1
     $cbc = $xml->createElement('cbc:UBLVersionID', '2.1');
     $cbc = $Invoice->appendChild($cbc);
     $cbc = $xml->createElement('cbc:CustomizationID', '2.0');
     $cbc = $Invoice->appendChild($cbc);
-    $cbc = $xml->createElement('cbc:ID', $notacredito->SerieNotaCredito . '-' . $notacredito->NumeracionNotaCredito);  // numero de factura
+    $cbc = $xml->createElement('cbc:ID', $cabecera->serie . '-' . $cabecera->numeracion);  // numero de factura
     $cbc = $Invoice->appendChild($cbc);
     $cbc = $xml->createElement('cbc:IssueDate', $date->format('Y-m-d'));   // fecha de emision
     $cbc = $Invoice->appendChild($cbc);
     $cbc = $xml->createElement('cbc:IssueTime', $date->format('H:i:s'));   // hora de emision
     $cbc = $Invoice->appendChild($cbc);
     $cbc = $xml->createElement('cbc:Note');
-    $cbc->appendChild($xml->createCDATASection($gcl->getResult(round($totales['totalconimpuesto'], 2, PHP_ROUND_HALF_UP),  $notacredito->NombreMoneda)));
+    $cbc->appendChild($xml->createCDATASection($gcl->getResult(round($totalimporte, 2, PHP_ROUND_HALF_UP), $cabecera->nommoneda)));
     $cbc = $Invoice->appendChild($cbc);
     $cbc->setAttribute('languageLocaleID', "1000");
-    $cbc = $xml->createElement('cbc:DocumentCurrencyCode', $notacredito->TipoMoneda);
+    $cbc = $xml->createElement('cbc:DocumentCurrencyCode', $cabecera->codiso);
     $cbc = $Invoice->appendChild($cbc);
 
     //MOTIVO ANULACION
     $DiscrepancyResponse = $xml->createElement('cac:DiscrepancyResponse');
     $DiscrepancyResponse = $Invoice->appendChild($DiscrepancyResponse);
-    $cbc = $xml->createElement('cbc:ReferenceID', $notacredito->Serie . '-' . $notacredito->Numeracion);
+    $cbc = $xml->createElement('cbc:ReferenceID', $cabecera->seriemod . '-' . $cabecera->numeracionmod);
     $cbc = $DiscrepancyResponse->appendChild($cbc);
-    $cbc = $xml->createElement('cbc:ResponseCode', $notacredito->CodigoAnulacion);
+    $cbc = $xml->createElement('cbc:ResponseCode', $cabecera->codmotivo);
     $cbc = $DiscrepancyResponse->appendChild($cbc);
-    $cbc = $xml->createElement('cbc:Description', $notacredito->MotivoAnulacion);
+    $cbc = $xml->createElement('cbc:Description', $cabecera->descmotivo);
     $cbc = $DiscrepancyResponse->appendChild($cbc);
 
     //DOCUMENTO REFERENCIA
@@ -88,26 +92,26 @@ if (!is_array($result)) {
     $BillingReference = $Invoice->appendChild($BillingReference);
     $IvReference = $xml->createElement('cac:InvoiceDocumentReference');
     $IvReference = $BillingReference->appendChild($IvReference);
-    $cbc = $xml->createElement('cbc:ID', $notacredito->Serie . '-' . $notacredito->Numeracion);
+    $cbc = $xml->createElement('cbc:ID', $cabecera->seriemod . '-' . $cabecera->numeracionmod);
     $cbc = $IvReference->appendChild($cbc);
-    $cbc = $xml->createElement('cbc:DocumentTypeCode', $notacredito->CodigoAlterno);
+    $cbc = $xml->createElement('cbc:DocumentTypeCode', $cabecera->codcomprobantemod);
     $cbc = $IvReference->appendChild($cbc);
 
     // DATOS DE FIRMA
     $cac_signature = $xml->createElement('cac:Signature');
     $cac_signature = $Invoice->appendChild($cac_signature);
-    $cbc = $xml->createElement('cbc:ID',  $empresa->NumeroDocumento);
+    $cbc = $xml->createElement('cbc:ID',  $empresa->ruc);
     $cbc = $cac_signature->appendChild($cbc);
     $cac_signatory = $xml->createElement('cac:SignatoryParty');
     $cac_signatory = $cac_signature->appendChild($cac_signatory);
     $cac = $xml->createElement('cac:PartyIdentification');
     $cac = $cac_signatory->appendChild($cac);
-    $cbc = $xml->createElement('cbc:ID',  $empresa->NumeroDocumento);
+    $cbc = $xml->createElement('cbc:ID',  $empresa->ruc);
     $cbc = $cac->appendChild($cbc);
     $cac = $xml->createElement('cac:PartyName');
     $cac = $cac_signatory->appendChild($cac);
     $cbc = $xml->createElement('cbc:Name');
-    $cbc->appendChild($xml->createCDATASection($empresa->RazonSocial));
+    $cbc->appendChild($xml->createCDATASection($empresa->razonSocial));
     $cbc = $cac->appendChild($cbc);
     $cac = $xml->createElement('cac:ExternalReference');
     $cac_digital = $xml->createElement('cac:DigitalSignatureAttachment');
@@ -124,39 +128,39 @@ if (!is_array($result)) {
     $cac_party = $cac_SupplierParty->appendChild($cac_party);
     $PartyIdentification = $xml->createElement('cac:PartyIdentification');
     $PartyIdentification = $cac_party->appendChild($PartyIdentification);
-    $cbc = $xml->createElement('cbc:ID', $empresa->NumeroDocumento);
-    $cbc->setAttribute('schemeID', "6");
+    $cbc = $xml->createElement('cbc:ID', $empresa->ruc);
+    $cbc->setAttribute('schemeID', $empresa->coddocumento);
     $cbc = $PartyIdentification->appendChild($cbc);
     $PartyName = $xml->createElement('cac:PartyName');
     $PartyName = $cac_party->appendChild($PartyName);
     $cbc = $xml->createElement('cbc:Name');
-    $cbc->appendChild($xml->createCDATASection($empresa->NombreComercial));
+    $cbc->appendChild($xml->createCDATASection($empresa->nombreEmpresa));
     $cbc = $PartyName->appendChild($cbc);
     $PartyLegalEntity = $xml->createElement('cac:PartyLegalEntity');
     $PartyLegalEntity = $cac_party->appendChild($PartyLegalEntity);
     $cbc = $xml->createElement('cbc:RegistrationName');
-    $cbc->appendChild($xml->createCDATASection($empresa->RazonSocial));
+    $cbc->appendChild($xml->createCDATASection($empresa->razonSocial));
     $cbc = $PartyLegalEntity->appendChild($cbc);
     $RegistrationAddress = $xml->createElement('cac:RegistrationAddress');
     $RegistrationAddress = $PartyLegalEntity->appendChild($RegistrationAddress);
-    $cbc = $xml->createElement('cbc:ID', $empresa->CodigoUbigeo);
+    $cbc = $xml->createElement('cbc:ID', $empresa->ubigeo);
     $cbc = $RegistrationAddress->appendChild($cbc);
     $cbc = $xml->createElement('cbc:AddressTypeCode', "0000");
     $cbc = $RegistrationAddress->appendChild($cbc);
-    $cbc = $xml->createElement('cbc:CityName', $empresa->Provincia);
+    $cbc = $xml->createElement('cbc:CityName', $empresa->provincia);
     $cbc = $RegistrationAddress->appendChild($cbc);
-    $cbc = $xml->createElement('cbc:CountrySubentity', $empresa->Departamento);
+    $cbc = $xml->createElement('cbc:CountrySubentity', $empresa->departamento);
     $cbc = $RegistrationAddress->appendChild($cbc);
-    $cbc = $xml->createElement('cbc:District', $empresa->Distrito);
+    $cbc = $xml->createElement('cbc:District', $empresa->distrito);
     $cbc = $RegistrationAddress->appendChild($cbc);
     $AddressLine = $xml->createElement('cac:AddressLine');
     $AddressLine = $RegistrationAddress->appendChild($AddressLine);
     $cbc = $xml->createElement('cbc:Line');
-    $cbc->appendChild($xml->createCDATASection($empresa->Domicilio));
+    $cbc->appendChild($xml->createCDATASection($empresa->direccion));
     $cbc = $AddressLine->appendChild($cbc);
     $CountryLine = $xml->createElement('cac:Country');
     $CountryLine = $RegistrationAddress->appendChild($CountryLine);
-    $cbc = $xml->createElement('cbc:IdentificationCode', "PE");
+    $cbc = $xml->createElement('cbc:IdentificationCode',   "PE");
     $cbc = $CountryLine->appendChild($cbc);
 
     // DATOS DEL CLIENTE
@@ -166,32 +170,32 @@ if (!is_array($result)) {
     $cac_party = $cac_CustomerParty->appendChild($cac_party);
     $PartyIdentification = $xml->createElement('cac:PartyIdentification');
     $PartyIdentification = $cac_party->appendChild($PartyIdentification);
-    $cbc = $xml->createElement('cbc:ID', $notacredito->NumeroDocumento);
-    $cbc->setAttribute('schemeID', $notacredito->CodigoCliente);
+    $cbc = $xml->createElement('cbc:ID', $cabecera->documento);
+    $cbc->setAttribute('schemeID', $cabecera->coddocumento);
     $cbc = $PartyIdentification->appendChild($cbc);
     $PartyLegalEntity = $xml->createElement('cac:PartyLegalEntity');
     $PartyLegalEntity = $cac_party->appendChild($PartyLegalEntity);
     $cbc = $xml->createElement('cbc:RegistrationName');
-    $cbc->appendChild($xml->createCDATASection($notacredito->Informacion));
+    $cbc->appendChild($xml->createCDATASection($cabecera->informacion));
     $cbc = $PartyLegalEntity->appendChild($cbc);
 
     // TOTALES 
     $cac_TaxTotal = $xml->createElement('cac:TaxTotal');
     $cac_TaxTotal = $Invoice->appendChild($cac_TaxTotal);
-    $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($totales['totalimpuesto'], 2, PHP_ROUND_HALF_UP), 2, '.', ''));
-    $cbc->setAttribute('currencyID', $notacredito->TipoMoneda);
+    $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($sumaconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+    $cbc->setAttribute('currencyID', $cabecera->codiso);
     $cbc = $cac_TaxTotal->appendChild($cbc);
 
 
-    if ($totales['totalimpuesto'] > 0) {
+    if ($sumaconimp > 0) {
         $cac_TaxSubtotal = $xml->createElement('cac:TaxSubtotal');
         $cac_TaxSubtotal = $cac_TaxTotal->appendChild($cac_TaxSubtotal);
-        $cbc = $xml->createElement('cbc:TaxableAmount', number_format(round($totales['opgravada'], 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $cbc = $xml->createElement('cbc:TaxableAmount', number_format(round($opegravada, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac_TaxSubtotal->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $notacredito->TipoMoneda);
-        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($totales['totalimpuesto'], 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
+        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($sumaconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac_TaxSubtotal->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $notacredito->TipoMoneda);
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
         $cac_TaxCategory = $xml->createElement('cac:TaxCategory');
         $cac_TaxCategory = $cac_TaxSubtotal->appendChild($cac_TaxCategory);
         $cac_TaxScheme = $xml->createElement('cac:TaxScheme');
@@ -205,12 +209,12 @@ if (!is_array($result)) {
     } else {
         $cac_TaxSubtotal = $xml->createElement('cac:TaxSubtotal');
         $cac_TaxSubtotal = $cac_TaxTotal->appendChild($cac_TaxSubtotal);
-        $cbc = $xml->createElement('cbc:TaxableAmount', number_format(round($totales['opexonerada'], 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $cbc = $xml->createElement('cbc:TaxableAmount', number_format(round($opeexogenada, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac_TaxSubtotal->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $notacredito->TipoMoneda);
-        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($totales['totalimpuesto'], 2, PHP_ROUND_HALF_UP), 2, '.', ''));
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
+        $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($sumaconimp, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac_TaxSubtotal->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $notacredito->TipoMoneda);
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
         $cac_TaxCategory = $xml->createElement('cac:TaxCategory');
         $cac_TaxCategory = $cac_TaxSubtotal->appendChild($cac_TaxCategory);
         $cac_TaxScheme = $xml->createElement('cac:TaxScheme');
@@ -226,16 +230,16 @@ if (!is_array($result)) {
     // LEGAL MONETARY TOTAL  
     $cac_LegalMonetaryTotal = $xml->createElement('cac:LegalMonetaryTotal');
     $cac_LegalMonetaryTotal = $Invoice->appendChild($cac_LegalMonetaryTotal);
-    $cbc = $xml->createElement('cbc:PayableAmount', number_format(round($totales['totalconimpuesto'], 2, PHP_ROUND_HALF_UP), 2, '.', '')); //
+    $cbc = $xml->createElement('cbc:PayableAmount', number_format(round($totalimporte, 2, PHP_ROUND_HALF_UP), 2, '.', '')); //
     $cbc = $cac_LegalMonetaryTotal->appendChild($cbc);
-    $cbc->setAttribute('currencyID', $notacredito->TipoMoneda);
+    $cbc->setAttribute('currencyID',  $cabecera->codiso);
 
     $idlinea = 0;
     foreach ($detalle as $value) {
         $idlinea++;
-        $cantidad = $value['Cantidad'];
-        $impuesto = $value['ValorImpuesto'];
-        $precioVenta = $value['Precio'];
+        $cantidad = $value->cantidad;
+        $impuesto = $value->impporcen;
+        $precioVenta = $value->precio;
 
         $precioBruto = $precioVenta / (($impuesto / 100.00) + 1);
         $impuestoGenerado = $precioBruto * ($impuesto / 100.00);
@@ -252,17 +256,17 @@ if (!is_array($result)) {
         $cbc = $InvoiceLine->appendChild($cbc);
         $cbc = $xml->createElement('cbc:CreditedQuantity', number_format(round($cantidad, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $InvoiceLine->appendChild($cbc);
-        $cbc->setAttribute('unitCode', $value["CodigoUnidad"]);
+        $cbc->setAttribute('unitCode', $value->unidad);
         $cbc = $xml->createElement('cbc:LineExtensionAmount', number_format(round($importeBrutoTotal, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $InvoiceLine->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $notacredito->TipoMoneda);
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
         $pricing = $xml->createElement('cac:PricingReference');
         $pricing = $InvoiceLine->appendChild($pricing);
         $cac = $xml->createElement('cac:AlternativeConditionPrice');
         $cac = $pricing->appendChild($cac);
         $cbc = $xml->createElement('cbc:PriceAmount', number_format(round($importeNeto, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $cac->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $notacredito->TipoMoneda);
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
         $cbc = $xml->createElement('cbc:PriceTypeCode', '01');
         $cbc = $cac->appendChild($cbc);
 
@@ -270,24 +274,24 @@ if (!is_array($result)) {
         $taxtotal = $InvoiceLine->appendChild($taxtotal);
         $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($impuestoTotal, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $taxtotal->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $notacredito->TipoMoneda);
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
         $taxtsubtotal = $xml->createElement('cac:TaxSubtotal');
         $taxtsubtotal = $taxtotal->appendChild($taxtsubtotal);
         $cbc = $xml->createElement('cbc:TaxableAmount', number_format(round($importeBrutoTotal, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $taxtsubtotal->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $notacredito->TipoMoneda);
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
         $cbc = $xml->createElement('cbc:TaxAmount', number_format(round($impuestoTotal, 2, PHP_ROUND_HALF_UP), 2, '.', ''));
         $cbc = $taxtsubtotal->appendChild($cbc);
-        $cbc->setAttribute('currencyID',  $notacredito->TipoMoneda);
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
         $taxtcategory = $xml->createElement('cac:TaxCategory');
         $taxtcategory = $taxtsubtotal->appendChild($taxtcategory);
         $cbc = $xml->createElement('cbc:Percent', round($impuesto, 0, PHP_ROUND_HALF_UP));
         $cbc = $taxtcategory->appendChild($cbc);
-        $cbc = $xml->createElement('cbc:TaxExemptionReasonCode', $value["Codigo"]);
+        $cbc = $xml->createElement('cbc:TaxExemptionReasonCode', $value->impcodido);
         $cbc = $taxtcategory->appendChild($cbc);
 
 
-        if ($value["Codigo"] == '10') {
+        if ($value->impcodido == '10') {
             $igvcod = 'VAT';
             $igvnum = '1000';
             $igvname = 'IGV';
@@ -309,13 +313,13 @@ if (!is_array($result)) {
         $item = $xml->createElement('cac:Item');
         $item = $InvoiceLine->appendChild($item);
         $cbc = $xml->createElement('cbc:Description');
-        $cbc->appendChild($xml->createCDATASection($value['NombreMarca']));
+        $cbc->appendChild($xml->createCDATASection($value->descripcion));
         $cbc = $item->appendChild($cbc);
         $price = $xml->createElement('cac:Price');
         $price = $InvoiceLine->appendChild($price);
         $cbc = $xml->createElement('cbc:PriceAmount', number_format(round($precioBruto, 4, PHP_ROUND_HALF_UP), 4, '.', ''));
         $cbc = $price->appendChild($cbc);
-        $cbc->setAttribute('currencyID', $notacredito->TipoMoneda);
+        $cbc->setAttribute('currencyID', $cabecera->codiso);
     }
 
     //CREAR ARCHIVO
@@ -328,8 +332,7 @@ if (!is_array($result)) {
         mkdir($fileDir, 0777, true);
     }
 
-
-    $filename = $empresa->NumeroDocumento . '-' . $notacredito->TipoDocumentoNotaCredito . '-' . $notacredito->SerieNotaCredito . '-' . $notacredito->NumeracionNotaCredito;
+    $filename = $empresa->ruc . '-' . $cabecera->codcomprobante. '-' .  $cabecera->serie . '-' . $cabecera->numeracion;
     $xml->save('../files/' . $filename . '.xml');
     chmod('../files/' . $filename . '.xml', 0777);
 
@@ -339,49 +342,41 @@ if (!is_array($result)) {
 
 
     $soapResult = new SoapResult('../resources/wsdl/billService.wsdl', $filename);
-    $soapResult->sendBill(Sunat::xmlSendBill($empresa->NumeroDocumento, $empresa->UsuarioSol, $empresa->ClaveSol, $filename . '.zip', base64_encode(file_get_contents('../files/' . $filename . '.zip'))));
+    $soapResult->sendBill(Sunat::xmlSendBill($empresa->ruc, $empresa->useSol, $empresa->claveSol, $filename . '.zip', base64_encode(file_get_contents('../files/' . $filename . '.zip'))));
 
     if ($soapResult->isSuccess()) {
         if ($soapResult->isAccepted()) {
-            NotaCreditoADO::CambiarEstadoSunatNotaCredito($idNotaCredito,  $soapResult->getCode(), $soapResult->getDescription(), $soapResult->getHashCode(), Sunat::getXmlSign());
-            $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-            header($protocol . ' ' . 200 . ' ' . "OK");
+            NotaCreditoADO::SunatSuccess($idNotaCredito, $soapResult->getCode(), $soapResult->getDescription(), $soapResult->getHashCode(), Sunat::getXmlSign());
 
-            echo json_encode(array(
+            Response::sendSuccess([
                 "state" => $soapResult->isSuccess(),
                 "accept" => $soapResult->isAccepted(),
                 "code" => $soapResult->getCode(),
                 "description" => $soapResult->getDescription()
-            ));
+            ]);
         } else {
-            NotaCreditoADO::CambiarEstadoSunatNotaCreditoUnico($idNotaCredito, $soapResult->getCode(), $soapResult->getDescription());
-            $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-            header($protocol . ' ' . 200 . ' ' . "OK");
+            NotaCreditoADO::SunatSuccess($idNotaCredito, $soapResult->getCode(), $soapResult->getDescription(), $soapResult->getHashCode(), Sunat::getXmlSign());
 
-            echo json_encode(array(
+            Response::sendSuccess([
                 "state" => $soapResult->isSuccess(),
                 "accept" => $soapResult->isAccepted(),
                 "code" => $soapResult->getCode(),
                 "description" => $soapResult->getDescription()
-            ));
+            ]);
         }
     } else {
         if ($soapResult->getCode() == "1033") {
-            NotaCreditoADO::CambiarEstadoSunatNotaCreditoUnico($idNotaCredito, "0", $soapResult->getDescription());
-            $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-            header($protocol . ' ' . 200 . ' ' . "OK");
+            NotaCreditoADO::SunatWarning($idNotaCredito, "0", $soapResult->getDescription());
 
-            echo json_encode(array(
+            Response::sendSuccess([
                 "state" => false,
                 "code" => $soapResult->getCode(),
                 "description" => $soapResult->getDescription()
-            ));
+            ]);
         } else {
-            NotaCreditoADO::CambiarEstadoSunatNotaCreditoUnico($idNotaCredito, $soapResult->getCode(), $soapResult->getDescription());
-            $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-            header($protocol . ' ' . 500 . ' ' . "Internal Server Error");
+            NotaCreditoADO::SunatWarning($idNotaCredito, $soapResult->getCode(), $soapResult->getDescription());
 
-            echo json_encode($soapResult->getDescription());
+            Response::sendError($soapResult->getDescription());
         }
     }
 }

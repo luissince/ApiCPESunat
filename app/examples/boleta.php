@@ -21,11 +21,7 @@ $gcl = new NumberLleters();
 
 
 if (!is_array($resultVenta)) {
-    echo json_encode(array(
-        "state" => false,
-        "code" => "-1",
-        "description" => $resultVenta
-    ));
+    Response::sendError($resultVenta);
 } else {
 
     $empresa = $resultVenta[0];
