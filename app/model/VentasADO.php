@@ -19,12 +19,21 @@ class VentasADO
     {
         try {
             if ($tipo == "a") {
+                $cmdNotaCredito = Database::getInstance()->getDb()->prepare("SELECT * FROM cobro AS c 
+                INNER JOIN notaCredito AS nc ON nc.idCobro = c.idCobro
+                WHERE c.idCobro = ?");
+                $cmdNotaCredito->bindParam(1, $idCobro, PDO::PARAM_STR);
+                $cmdNotaCredito->execute();
+                if ($cmdNotaCredito->fetch()) {
+                    throw new Exception("No se puede realizar un resumen diario ya que se encuentra asociado a una nota de crédito.");
+                }
+
                 $cmdCobro = Database::getInstance()->getDb()->prepare("SELECT * FROM cobro WHERE idCobro = ? AND estado = 1");
                 $cmdCobro->bindParam(1, $idCobro, PDO::PARAM_STR);
                 $cmdCobro->execute();
                 if ($cmdCobro->fetch()) {
                     throw new Exception("No se puede realizar un resumen diario ya que se encuentra en estado cobrado, tiene que anularlo para continuar con el proceso.");
-                }
+                }               
             }
 
             $cmdCabecera = Database::getInstance()->getDb()->prepare("SELECT 
