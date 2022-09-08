@@ -117,7 +117,7 @@ class SoapResult
             $message = $ex->faultstring;
             $this->setSuccess(false);
             $this->setCode($code);
-            $this->setDescription($message);
+            $this->setDescription("SoapFault -> "+$message);
         } catch (Exception $ex) {
             if (file_exists('../files/' . $this->filename . '.xml')) {
                 // unlink('../files/' . $this->filename . '.xml');
@@ -130,7 +130,7 @@ class SoapResult
             }
             $this->setSuccess(false);
             $this->setCode("-1");
-            $this->setDescription($ex->getMessage());
+            $this->setDescription("Exception -> ".$ex->getMessage());
         }
     }
 
