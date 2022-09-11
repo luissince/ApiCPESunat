@@ -36,6 +36,10 @@ if (!is_array($resultVenta)) {
 
     $totalimporte = $resultVenta[4]["totalimporte"];
 
+    if(intval($cabecera->numeroCampo) !== strlen($cabecera->documento)){
+        Response::sendClient("El número de caracteres del documento de identidad no es igual al asigno al comprobante. { " . $cabecera->numeroCampo." " .strlen($cabecera->documento)." }");
+    }
+
     date_default_timezone_set('America/Lima');
 
     $xml = new DomDocument('1.0', 'utf-8');

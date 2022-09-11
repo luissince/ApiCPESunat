@@ -38,6 +38,7 @@ class VentasADO
 
             $cmdCabecera = Database::getInstance()->getDb()->prepare("SELECT 
             co.codigo AS codcomprobante,
+            co.numeroCampo,
             v.serie,
             v.numeracion,
             v.fecha,
