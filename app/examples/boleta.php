@@ -36,6 +36,8 @@ if (!is_array($resultVenta)) {
 
     $totalimporte = $resultVenta[4]["totalimporte"];
 
+    date_default_timezone_set('America/Lima');
+
     $xml = new DomDocument('1.0', 'utf-8');
     // $xml->standalone         = true;
     $xml->preserveWhiteSpace = false;

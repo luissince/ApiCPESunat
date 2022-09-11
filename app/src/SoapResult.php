@@ -108,10 +108,10 @@ class SoapResult
             $this->setSuccess(true);
         } catch (SoapFault $ex) {
             if (file_exists('../files/' . $this->filename . '.xml')) {
-                // unlink('../files/' . $this->filename . '.xml');
+                unlink('../files/' . $this->filename . '.xml');
             }
             if (file_exists('../files/' . $this->filename . '.zip')) {
-                // unlink('../files/' . $this->filename . '.zip');
+                unlink('../files/' . $this->filename . '.zip');
             }
             $code = preg_replace('/[^0-9]/', '', $ex->faultcode);
             $message = $ex->faultstring;
@@ -120,13 +120,13 @@ class SoapResult
             $this->setDescription($message);
         } catch (Exception $ex) {
             if (file_exists('../files/' . $this->filename . '.xml')) {
-                // unlink('../files/' . $this->filename . '.xml');
+                unlink('../files/' . $this->filename . '.xml');
             }
             if (file_exists('../files/' . $this->filename . '.zip')) {
-                // unlink('../files/' . $this->filename . '.zip');
+                unlink('../files/' . $this->filename . '.zip');
             }
             if (file_exists('../files/R-' . $this->filename . '.zip')) {
-                // unlink('../files/R-' . $this->filename . '.zip');
+                unlink('../files/R-' . $this->filename . '.zip');
             }
             $this->setSuccess(false);
             $this->setCode("-1");
