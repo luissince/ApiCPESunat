@@ -405,7 +405,7 @@ if (!is_array($resultVenta)) {
             ]);
         } else {
             VentasADO::SunatWarning($idCobro, $soapResult->getCode(), $soapResult->getDescription());
-            Response::sendError($soapResult->getCode()." ".$soapResult->getDescription());
+            Response::sendError($soapResult->getDescription());
         }
     }
 }
