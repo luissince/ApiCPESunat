@@ -367,7 +367,7 @@ if (!is_array($result)) {
             ]);
         }
     } else {
-        if ($soapResult->getCode() == "1033" || $soapResult->getCode() == "2987") {
+        if ($soapResult->getCode() == "1033") {
             NotaCreditoADO::SunatWarning($idNotaCredito, "0", $soapResult->getDescription());
 
             Response::sendSuccess([
