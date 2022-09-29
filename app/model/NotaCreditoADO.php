@@ -48,6 +48,12 @@ class NotaCreditoADO
             $cmdCabecera->bindParam(1, $idNotaCredito, PDO::PARAM_STR);
             $cmdCabecera->execute();
 
+            $cmdCorrelativo = Database::getInstance()->getDb()->prepare("SELECT 
+            MAX(IFNULL(correlativo,0)) AS correlativo 
+            FROM notaCredito 
+            WHERE fechaCorrelativo = CURRENT_DATE()");
+            $cmdCorrelativo->execute();
+
             $cmdEmpresa = Database::getInstance()->getDb()->prepare("SELECT
             tp.codigo AS coddocumento,
             e.documento AS ruc,
@@ -119,6 +125,7 @@ class NotaCreditoADO
                 (object)array_merge((array)$cmdSede->fetchObject(), (array) $cmdEmpresa->fetchObject()),
                 $cmdCabecera->fetchObject(),
                 $detalle,
+                $cmdCorrelativo->fetchColumn(),
                 array(
                     "opegravada" => $opegravada,
                     "opeexonerada" => $opeexogenada,
@@ -170,17 +177,17 @@ class NotaCreditoADO
         }
     }
 
-    public static function SunatResumenSuccess($idCobro, $codigo, $descripcion, $correlativo, $fechaCorrelativo)
+    public static function SunatResumenSuccess($idNotaCredito, $codigo, $descripcion, $correlativo, $fechaCorrelativo)
     {
         try {
             Database::getInstance()->getDb()->beginTransaction();
-            $comando = Database::getInstance()->getDb()->prepare("UPDATE cobro SET 
-              xmlSunat = ?, xmlDescripcion = ?, correlativo=?, fechaCorrelativo=? WHERE idCobro = ?");
+            $comando = Database::getInstance()->getDb()->prepare("UPDATE notaCredito SET 
+              xmlSunat = ?, xmlDescripcion = ?, correlativo=?, fechaCorrelativo=? WHERE idNotaCredito  = ?");
             $comando->bindParam(1, $codigo, PDO::PARAM_STR);
             $comando->bindParam(2, $descripcion, PDO::PARAM_STR);
             $comando->bindParam(3, $correlativo, PDO::PARAM_INT);
             $comando->bindParam(4, $fechaCorrelativo, PDO::PARAM_STR);
-            $comando->bindParam(5, $idCobro, PDO::PARAM_STR);
+            $comando->bindParam(5, $idNotaCredito, PDO::PARAM_STR);
             $comando->execute();
             Database::getInstance()->getDb()->commit();
             return "updated";

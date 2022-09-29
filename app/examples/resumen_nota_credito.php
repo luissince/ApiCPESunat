@@ -9,13 +9,13 @@ header('Content-Type: application/json; charset=UTF-8');
 
 use SysSoftIntegra\Src\SoapResult;
 use SysSoftIntegra\Src\Sunat;
-use SysSoftIntegra\Model\VentasADO;
+use SysSoftIntegra\Model\NotaCreditoADO;
 use SysSoftIntegra\Src\Response;
 
 require __DIR__ . './../src/autoload.php';
 
-$idCobro  = $_GET['idCobro'];
-$result = VentasADO::DetalleVentaSunat($idCobro,"a");
+$idNotaCredito  = $_GET['idNotaCredito'];
+$result = NotaCreditoADO::DetalleNotaCreditoSunat($idNotaCredito);
 
 if (!is_array($result)) {
     Response::sendError($result);
@@ -95,7 +95,6 @@ if (!is_array($result)) {
     $cac = $cac_digital->appendChild($cac);
     $cbc = $xml->createElement('cbc:URI', '#SysSoftIntegra');
     $cbc = $cac->appendChild($cbc);
-
 
     // // DATOS EMISOR
     $cac_SupplierParty = $xml->createElement('cac:AccountingSupplierParty');
@@ -236,8 +235,8 @@ if (!is_array($result)) {
         $soapResult->sendGetStatus(Sunat::xmlGetStatus($empresa->ruc,  $empresa->useSol, $empresa->claveSol, $soapResult->getTicket()));
         if ($soapResult->isSuccess()) {
             if ($soapResult->isAccepted()) {
-                VentasADO::SunatResumenSuccess($idCobro, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
-                
+                NotaCreditoADO::SunatResumenSuccess($idNotaCredito, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+
                 Response::sendSuccess(array(
                     "state" => $soapResult->isSuccess(),
                     "accept" => $soapResult->isAccepted(),
@@ -245,7 +244,7 @@ if (!is_array($result)) {
                     "description" => $soapResult->getDescription()
                 ));
             } else {
-                VentasADO::SunatResumenSuccess($idCobro, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+                NotaCreditoADO::SunatResumenSuccess($idNotaCredito, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
 
                 Response::sendSuccess(array(
                     "state" => $soapResult->isSuccess(),
@@ -255,7 +254,7 @@ if (!is_array($result)) {
                 ));
             }
         } else {
-            VentasADO::SunatResumenSuccess($idCobro, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+            NotaCreditoADO::SunatResumenSuccess($idNotaCredito, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
 
             Response::sendSuccess(array(
                 "state" => false,
@@ -264,8 +263,9 @@ if (!is_array($result)) {
             ));
         }
     } else {
-        VentasADO::SunatResumenSuccess($idCobro, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
+        NotaCreditoADO::SunatResumenSuccess($idNotaCredito, $soapResult->getCode(),  $soapResult->getDescription(), $correlativo, $currentDate->format('Y-m-d'));
 
         Response::sendError($soapResult->getDescription());
     }
+
 }

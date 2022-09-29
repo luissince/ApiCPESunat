@@ -27,13 +27,13 @@ if (!is_array($result)) {
     $cabecera = $result[1];
     $detalle = $result[2];
 
-    $opegravada = $result[3]["opegravada"];
-    $opeexogenada = $result[3]["opeexonerada"];
+    $opegravada = $result[4]["opegravada"];
+    $opeexogenada = $result[4]["opeexonerada"];
 
-    $sumasinimp = $result[3]["totalsinimpuesto"];
-    $sumaconimp = $result[3]["totalconimpuesto"];
+    $sumasinimp = $result[4]["totalsinimpuesto"];
+    $sumaconimp = $result[4]["totalconimpuesto"];
 
-    $totalimporte = $result[3]["totalimporte"];
+    $totalimporte = $result[4]["totalimporte"];
 
     date_default_timezone_set('America/Lima');
 
@@ -367,7 +367,7 @@ if (!is_array($result)) {
             ]);
         }
     } else {
-        if ($soapResult->getCode() == "1033") {
+        if ($soapResult->getCode() == "1033" || $soapResult->getCode() == "2987") {
             NotaCreditoADO::SunatWarning($idNotaCredito, "0", $soapResult->getDescription());
 
             Response::sendSuccess([
