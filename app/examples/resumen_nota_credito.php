@@ -33,7 +33,7 @@ if (!is_array($result)) {
 
     $totalimporte = $result[4]["totalimporte"];
     $correlativoActual = $result[3];
-    $correlativo = ($correlativoActual === 0) ? (intval($cabecera->correlativo) + 1) : ($correlativoActual + 1);
+    $correlativo = 3;
     date_default_timezone_set('America/Lima');
     $currentDate = new DateTime('now');
 
