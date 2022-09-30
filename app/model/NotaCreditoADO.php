@@ -25,6 +25,7 @@ class NotaCreditoADO
             nc.fecha,
             nc.hora,
             1 AS tipo,
+            IFNULL(nc.correlativo,0) AS correlativo,
             m.nombre AS nommoneda,
             m.simbolo,
             m.codiso,
